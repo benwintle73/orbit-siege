@@ -150,7 +150,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
   <button id="bSound" class="small" aria-label="Toggle sound">SOUND</button>
 </div>
-<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN NO LIMITS &amp; REDEEM</a></div></div>
+<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN / RENEW ONLINE</a></div></div>
 <div class="dirs">
   <button class="dir" data-k="left" aria-label="Move left">◀</button>
   <button class="dir" data-k="right" aria-label="Move right">▶</button>
@@ -551,7 +551,7 @@ function drawPrize(){
   if(P.status==='code'){
     ctx.fillStyle=C.gold;[[20,118,W-40,1],[20,136,W-40,1],[20,118,1,19],[W-21,118,1,19]].forEach(r=>ctx.fillRect(...r));
     text(P.code,W/2,124,C.white);
-    text('REDEEM IT ONLINE WHEN',W/2,144,C.greyLt);text('YOU JOIN NO LIMITS',W/2,154,C.greyLt);
+    text('USE IT TO JOIN, RENEW OR',W/2,144,C.greyLt);text('CREDIT YOUR MEMBERSHIP',W/2,154,C.greyLt);
     if(P.emailed===true)text('CODE EMAILED TO YOU TOO',W/2,166,C.gold);
     else if(P.emailed===false)text('SCREENSHOT THIS CODE',W/2,166,C.gold);
     else text("WE'LL EMAIL IT TO YOU TOO",W/2,166,C.gold);
@@ -724,7 +724,7 @@ const UI=(()=>{
       const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
       body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
         <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
-        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Enter this code when you sign up to No Limits online. We've also emailed it to you.</div><a class="go" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="margin-top:12px">JOIN NO LIMITS &amp; REDEEM</a></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Use it when you join or renew online. Already a member? Contact No Limits and we'll credit it to your weekly direct debit. We've also emailed it to you.</div><a class="go" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="margin-top:12px">JOIN / RENEW ONLINE</a></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
         <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
         <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
       $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};
@@ -762,7 +762,7 @@ const UI=(()=>{
         <h3>SETS</h3>
         <p>Every set starts lower and attacks faster: Beginner, Warming Up, Getting Stronger, Heavy Lifting, then BEAST MODE.</p>
         <h3>WIN $100</h3>
-        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Redeem your code online when you <a href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="color:var(--gold)">sign up to No Limits</a>.</li></ul>
+        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Use your code when you <a href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="color:var(--gold)">join or renew online</a>, or as a credit towards your weekly direct debit if you're already a member.</li></ul>
         <h3>TOP 10</h3>
         <p>Sign in and every finished game is saved. Chase the all-time and monthly Top 10 boards.</p>
       </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>`;

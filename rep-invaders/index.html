@@ -179,7 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.23';
+const APP_VERSION='1.24';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -308,6 +308,7 @@ let startReq=false;
 
 function makeRacks(){G.racks=[0,1,2,3].map(i=>({x:Math.round(W*(i+1)/5-RACK_W/2),y:CFG.rackY,d:rackShape()}));}
 function startWave(){
+  makeRacks();
   const A=CFG.alien,top=A.startY+Math.min(G.wave,A.maxLower)*8;G.aliens=[];
   for(let r=4;r>=0;r--)for(let c=0;c<A.cols;c++)G.aliens.push({x:A.startX+c*A.spacingX,y:top+r*A.spacingY,t:r,c,f:0,alive:true});
   G.ptr=0;G.dx=A.step;G.dropPending=false;
@@ -316,7 +317,7 @@ function startWave(){
 function setLabel(i){return CFG.setNames[Math.min(i,CFG.setNames.length-1)];}
 function newGame(){
   Object.assign(G,{score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
-  makeRacks();startWave();showBanner(["LET'S GO!",'SET 1',setLabel(0)],100,'intro');
+  startWave();showBanner(["LET'S GO!",'SET 1',setLabel(0)],100,'intro');
 }
 function showBanner(lines,frames,state){G.banner=lines;G.timer=frames;G.state=state;}
 function alienBox(a){const s=SPR[TYPES[a.t].k][a.f];return{x:a.x+((12-s.w)>>1),y:a.y+((8-s.h)>>1),w:s.w,h:s.h,s};}
@@ -855,7 +856,7 @@ const UI=(()=>{
         <h3>ENERGY (LIVES)</h3>
         <ul><li>You start with <span class="k">${CFG.lives} energy</span>.</li><li>Earn <span class="k">1 bonus energy every ${CFG.extraLifeEvery.toLocaleString()} reps</span>.</li><li>Each hit costs 1 energy.</li><li>If the equipment reaches your lifter, it's workout over.</li></ul>
         <h3>SQUAT RACKS</h3>
-        <p>Hide behind the 4 racks. Every hit chips a piece off, including your own shots, so they wear down over the game.</p>
+        <p>Hide behind the 4 racks. Every hit chips a piece off, including your own shots. They're rebuilt good as new at the start of every set.</p>
         <h3>SETS</h3>
         <p>Every set starts lower and attacks faster: Beginner, Warming Up, Getting Stronger, Heavy Lifting, then BEAST MODE.</p>
         <h3>WIN $100</h3>

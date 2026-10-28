@@ -179,7 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.22';
+const APP_VERSION='1.23';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -188,7 +188,7 @@ const CFG={
   bullet:{speed:4},
   alien:{cols:11,startX:26,startY:56,spacingX:16,spacingY:16,step:2,drop:8,maxLower:6},
   rackY:188,groundY:236,
-  lives:3,extraLifeAt:1500,
+  lives:4,extraLifeEvery:1000,
   shaker:{y:28,speed:.8,interval:1400,minAliens:8},
   setNames:['BEGINNER','WARMING UP','GETTING STRONGER','HEAVY LIFTING','BEAST MODE'],
   cheers:['SET COMPLETE!','KEEP PUSHING!','NO LIMITS!','ONE MORE REP!','FEEL THE BURN!','BEAST MODE!','STAY STRONG!'],
@@ -298,7 +298,7 @@ const Records={
 Records.load();
 
 /* ================= GAME STATE ================= */
-const G={state:'title',score:0,lives:CFG.lives,wave:0,extraGiven:false,paused:false,frame:0,timer:0,
+const G={state:'title',score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,paused:false,frame:0,timer:0,
   player:null,pBullet:null,aBullets:[],aliens:[],ptr:0,dx:CFG.alien.step,dropPending:false,racks:[],
   shaker:null,shakerTimer:0,shots:0,booms:[],fireTimer:0,beatIdx:0,lastBeat:0,invaded:false,
   banner:null,shake:0,newPB:false,pendingReload:false,titleFrame:0,
@@ -315,14 +315,15 @@ function startWave(){
 }
 function setLabel(i){return CFG.setNames[Math.min(i,CFG.setNames.length-1)];}
 function newGame(){
-  Object.assign(G,{score:0,lives:CFG.lives,wave:0,extraGiven:false,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
+  Object.assign(G,{score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
   makeRacks();startWave();showBanner(["LET'S GO!",'SET 1',setLabel(0)],100,'intro');
 }
 function showBanner(lines,frames,state){G.banner=lines;G.timer=frames;G.state=state;}
 function alienBox(a){const s=SPR[TYPES[a.t].k][a.f];return{x:a.x+((12-s.w)>>1),y:a.y+((8-s.h)>>1),w:s.w,h:s.h,s};}
 function aliveCount(){let n=0;for(const a of G.aliens)if(a.alive)n++;return n;}
 function bestShown(){return Math.max(Records.data.pb,G.score);}
-function addScore(p){G.score+=p;if(!G.extraGiven&&G.score>=CFG.extraLifeAt){G.extraGiven=true;G.lives++;Audio.fx.life();}}
+function addScore(p){G.score+=p;let got=false;while(G.score>=G.nextLife){G.nextLife+=CFG.extraLifeEvery;G.lives++;got=true;}
+  if(got){Audio.fx.life();G.booms.push({x:W/2,y:226,t:70,kind:'bonus',text:'+1 ENERGY',nobanner:true});}}
 
 function hitRack(x,y,w,h){
   for(const b of G.racks){
@@ -579,7 +580,7 @@ function drawGame(){
   for(const b of G.booms){
     if(b.kind==='boom')spr(SPR.boom,b.x,b.y);
     else if(b.kind==='spark')spr(SPR.spark,b.x,b.y);
-    else if(b.kind==='bonus'){text(b.text,b.x,b.y,C.gold);if(blink(8))text('BONUS GAINS!',W/2,44,C.gold);}
+    else if(b.kind==='bonus'){text(b.text,b.x,b.y,C.gold);if(!b.nobanner&&blink(8))text('BONUS GAINS!',W/2,44,C.gold);}
   }
   ctx.fillStyle=C.gold;ctx.fillRect(0,CFG.groundY,W,1);
   text('ENERGY',8,242,C.gold,'left');text(String(Math.max(0,G.lives)),64,242,C.white,'left');
@@ -852,7 +853,7 @@ const UI=(()=>{
         </tbody></table>
         <p class="fine" style="text-align:left">The golden shaker flies across the top now and then. Its mystery value depends on how many shots you've taken.</p>
         <h3>ENERGY (LIVES)</h3>
-        <ul><li>You start with <span class="k">3 energy</span>.</li><li>Earn <span class="k">1 bonus energy at ${CFG.extraLifeAt.toLocaleString()} reps</span> (once per game).</li><li>Each hit costs 1 energy.</li><li>If the equipment reaches your lifter, it's workout over.</li></ul>
+        <ul><li>You start with <span class="k">${CFG.lives} energy</span>.</li><li>Earn <span class="k">1 bonus energy every ${CFG.extraLifeEvery.toLocaleString()} reps</span>.</li><li>Each hit costs 1 energy.</li><li>If the equipment reaches your lifter, it's workout over.</li></ul>
         <h3>SQUAT RACKS</h3>
         <p>Hide behind the 4 racks. Every hit chips a piece off, including your own shots, so they wear down over the game.</p>
         <h3>SETS</h3>

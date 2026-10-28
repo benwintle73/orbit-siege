@@ -1,5 +1,5 @@
 // Offline cache for Orbit Siege. Bump VERSION when files change.
-const VERSION = 'orbit-siege-v6';
+const VERSION = 'orbit-siege-v7';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,6 +17,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // Rep Invaders lives in its own folder with its own service worker.
+  if (new URL(req.url).pathname.includes('/rep-invaders/')) return;
   // Page: network first so updates show up, cache as fallback for offline.
   if (req.mode === 'navigate') {
     e.respondWith(

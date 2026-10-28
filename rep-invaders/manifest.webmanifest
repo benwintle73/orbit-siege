@@ -1,0 +1,15 @@
+{
+  "name": "No Limits: Rep Invaders",
+  "short_name": "Rep Invaders",
+  "description": "Retro arcade game by No Limits 24/7 Health Clubs. Defend your gains.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#080808",
+  "theme_color": "#080808",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

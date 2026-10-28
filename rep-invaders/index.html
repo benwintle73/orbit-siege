@@ -384,7 +384,7 @@ function doClaim(){
   Online.claim(G.score,10).then(code=>{
     try{localStorage.removeItem(CLAIM_KEY)}catch(e){}
     G.prize=code?{status:'code',code}:{status:'desk'};Online.refresh();Online.loadTally();
-    if(code)Online.emailVoucher().then(sent=>{if(sent&&G.prize&&G.prize.code===code)G.prize.emailed=true;});
+    if(code)Online.emailVoucher().then(sent=>{if(G.prize&&G.prize.code===code)G.prize.emailed=sent;});
   }).catch(e=>{G.prize={status:'error',msg:short(e.message)};});
 }
 // Claim saved for later (player won before signing in, then closed the game)
@@ -547,7 +547,9 @@ function drawPrize(){
     ctx.fillStyle=C.gold;[[20,118,W-40,1],[20,136,W-40,1],[20,118,1,19],[W-21,118,1,19]].forEach(r=>ctx.fillRect(...r));
     text(P.code,W/2,124,C.white);
     text('SHOW THIS AT THE',W/2,144,C.greyLt);text('NO LIMITS FRONT DESK',W/2,154,C.greyLt);
-    if(P.emailed)text('ALSO EMAILED TO YOU',W/2,166,C.gold);
+    if(P.emailed===true)text('CODE EMAILED TO YOU TOO',W/2,166,C.gold);
+    else if(P.emailed===false)text('SCREENSHOT THIS CODE',W/2,166,C.gold);
+    else text("WE'LL EMAIL IT TO YOU TOO",W/2,166,C.gold);
   }else if(P.status==='claiming'){if(blink(10))text('CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
   else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
   else if(P.status==='desk'){text('ALL 10 VOUCHERS',W/2,124,C.white);text('HAVE BEEN WON. LEGEND!',W/2,138,C.greyLt);}

@@ -1,5 +1,5 @@
 // Offline cache for Rep Invaders. Bump VERSION when files change.
-const VERSION = 'rep-invaders-v6';
+const VERSION = 'rep-invaders-v7';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

@@ -179,7 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.27';
+const APP_VERSION='1.28';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -190,6 +190,7 @@ const CFG={
   rackY:188,groundY:236,
   lives:4,extraLifeEvery:1000,
   shaker:{y:28,speed:.8,interval:1400,minAliens:8},
+  tubChance:.35,spotterGap:15,
   setNames:['BEGINNER','WARMING UP','GETTING STRONGER','HEAVY LIFTING','BEAST MODE'],
   cheers:['SET COMPLETE!','KEEP PUSHING!','NO LIMITS!','ONE MORE REP!','FEEL THE BURN!','BEAST MODE!','STAY STRONG!'],
   shakerPts:[100,50,50,100,150,100,100,50,300,100,100,100,50,150,100],
@@ -233,6 +234,13 @@ const SPR={
   spark:mk(["G.W.G.",".WGW..","GW.WGG",".WGW..","G.W.G."]),
   player:mk(PLAYER_IDLE),playerLift:mk(PLAYER_LIFT),
   playerHit:mk(PLAYER_IDLE,C.red),
+  // Spotter: same lifter in a red singlet with white trim
+  spotter:mk(PLAYER_IDLE.map(r=>r.replace(/K/g,'R').replace(/G/g,'W'))),
+  spotterLift:mk(PLAYER_LIFT.map(r=>r.replace(/K/g,'R').replace(/G/g,'W'))),
+  spotterHit:mk(PLAYER_IDLE,C.white),
+  // Protein tub: grey lid, white tub, red label
+  tub:[mk(["..MMMMM..",".MmmmmmM.",".WWWWWWW.","WWRRRRRWW","WWRWWWRWW","WWRRRRRWW","WWWWWWWWW",".WWWWWWW.","..WWWWW.."]),
+       mk(["..MMMMM..",".MmmmmmM.",".WWWWWWW.","WWRRRRRWW","WWRRRRRWW","WWRWWWRWW","WWWWWWWWW",".WWWWWWW.","..WWWWW.."])],
   pdie:[debris(7),debris(91)],
   life:mk(["..BBB..","..SSS..","SSGKGSS","S.KKK.S","..GGG..","..M.M.."]),
   shaker:[mk(["..WWWW..","..WWWW..",".MMMMMM.",".GGGGGG.","GWGGGGGG","GWKKKKGG","GGKGGKGG","GGKKKKGG","GgGGGGgG","GgGGGGgG",".GGGGGG."]),
@@ -304,7 +312,7 @@ Records.load();
 
 /* ================= GAME STATE ================= */
 const G={state:'title',score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,paused:false,frame:0,timer:0,
-  player:null,pBullet:null,aBullets:[],aliens:[],ptr:0,dx:CFG.alien.step,dropPending:false,racks:[],
+  player:null,pbs:[],spotter:false,aBullets:[],aliens:[],ptr:0,dx:CFG.alien.step,dropPending:false,racks:[],
   shaker:null,shakerTimer:0,shots:0,booms:[],fireTimer:0,beatIdx:0,lastBeat:0,invaded:false,
   banner:null,shake:0,newPB:false,pendingReload:false,titleFrame:0,
   prizeShown:false,prize:null,save:''};
@@ -314,14 +322,16 @@ let startReq=false;
 function makeRacks(){G.racks=[0,1,2,3].map(i=>({x:Math.round(W*(i+1)/5-RACK_W/2),y:CFG.rackY,d:rackShape()}));}
 function startWave(){
   makeRacks();
-  const A=CFG.alien,top=A.startY+Math.min(G.wave,A.maxLower)*8;G.aliens=[];
+  const A=CFG.alien,top=A.startY+Math.min(Math.floor(lvl()),A.maxLower)*8;G.aliens=[];
   for(let r=4;r>=0;r--)for(let c=0;c<A.cols;c++)G.aliens.push({x:A.startX+c*A.spacingX,y:top+r*A.spacingY,t:r,c,f:0,alive:true});
   G.ptr=0;G.dx=A.step;G.dropPending=false;
-  G.player={x:W/2-6,y:CFG.player.y,fireT:0};G.pBullet=null;G.aBullets=[];G.shaker=null;G.shakerTimer=0;G.fireTimer=70;G.invaded=false;Audio.loopStop();
+  G.player={x:W/2-6,y:CFG.player.y,fireT:0};G.pbs=[];G.aBullets=[];G.shaker=null;G.shakerTimer=0;G.fireTimer=70;G.invaded=false;Audio.loopStop();
 }
+// Difficulty level: rises by 1 per set up to set 4, then only half a step per set (capped)
+function lvl(){const w=G.wave;return w<4?w:Math.min(3+(w-4)*.5,5);}
 function setLabel(i){return CFG.setNames[Math.min(i,CFG.setNames.length-1)];}
 function newGame(){
-  Object.assign(G,{score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
+  Object.assign(G,{spotter:false,score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
   startWave();showBanner(["LET'S GO!",'SET 1',setLabel(0)],100,'intro');
 }
 function showBanner(lines,frames,state){G.banner=lines;G.timer=frames;G.state=state;}
@@ -361,19 +371,19 @@ function stepAliens(){
 }
 function alienFire(){
   if(--G.fireTimer>0)return;
-  G.fireTimer=Math.max(17,53-G.wave*5)+(Math.random()*33|0);
-  const n=aliveCount(),maxB=Math.min(3,1+((G.wave+1)>>1)+(n<22?1:0));
+  const L=lvl();G.fireTimer=Math.max(17,53-L*5)+(Math.random()*33|0);
+  const n=aliveCount(),maxB=Math.min(3,1+((Math.floor(L)+1)>>1)+(n<22?1:0));
   if(G.aBullets.length>=maxB)return;
   const cols={};for(const a of G.aliens)if(a.alive&&(!cols[a.c]||a.y>cols[a.c].y))cols[a.c]=a;
   const list=Object.values(cols);if(!list.length)return;
   let pick;
-  if(Math.random()<.35+Math.min(G.wave,4)*.05){const pc=G.player.x+6;pick=list.reduce((m,a)=>{const b=alienBox(a),d=Math.abs(b.x+b.w/2-pc);return d<m.d?{a,d}:m},{a:null,d:1e9}).a;}
+  if(Math.random()<.35+Math.min(L,4)*.05){const pc=G.player.x+6;pick=list.reduce((m,a)=>{const b=alienBox(a),d=Math.abs(b.x+b.w/2-pc);return d<m.d?{a,d}:m},{a:null,d:1e9}).a;}
   else pick=list[Math.random()*list.length|0];
   const b=alienBox(pick);
-  G.aBullets.push({x:(b.x+b.w/2)|0,y:b.y+b.h,kind:Math.random()*2|0,f:0,v:1.1+Math.min(G.wave,6)*.12+(n<10?.35:0)});
+  G.aBullets.push({x:(b.x+b.w/2)|0,y:b.y+b.h,kind:Math.random()*2|0,f:0,v:1.1+Math.min(L,6)*.12+(n<10?.35:0)});
 }
 function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
-function killPlayer(){buzz([80,40,160]);G.state='dying';G.timer=110;G.aBullets=[];G.pBullet=null;G.shaker=null;Audio.loopStop();Audio.fx.hit();if(!REDUCED)G.shake=14;}
+function killPlayer(){buzz([80,40,160]);G.state='dying';G.timer=110;G.aBullets=[];G.pbs=[];G.spotter=false;G.shaker=null;Audio.loopStop();Audio.fx.hit();if(!REDUCED)G.shake=14;}
 function gameOver(){
   if(G.pendingReload){Records.submit(G.score,G.wave+1);location.reload();return;}
   G.newPB=Records.submit(G.score,G.wave+1);G.state='over';G.timer=90;Audio.loopStop();
@@ -462,35 +472,55 @@ function claimSaved(){
   if(!c||!Online.ready||G.state==='prize')return;
   Online.claim(c.score,c.sets).then(code=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){};if(code)Online.emailVoucher();Online.refresh().then(()=>{if(code)UI.open('account');});}).catch(e=>{if(!isNetErr(e)){try{localStorage.removeItem(CLAIM_KEY)}catch(_){}}});
 }
-function movePB(){
-  const pb=G.pBullet;pb.y-=CFG.bullet.speed;
+// Move one of the player's shots; returns true when the shot is used up
+function moveShot(pb){
+  pb.y-=CFG.bullet.speed;
   const bx=pb.x-1,by=pb.y,bw=3,bh=3;
-  if(pb.y<24){G.booms.push({x:pb.x-3,y:24,t:12,kind:'spark'});G.pBullet=null;return;}
+  if(pb.y<24){G.booms.push({x:pb.x-3,y:24,t:12,kind:'spark'});return true;}
   for(const a of G.aliens){
     if(!a.alive)continue;const b=alienBox(a);
-    if(bx<b.x+b.w&&bx+bw>b.x&&by<b.y+b.h&&by+bh>b.y){a.alive=false;buzz(12);addScore(TYPES[a.t].pts);G.booms.push({x:b.x+((b.w-12)>>1),y:b.y,t:16,kind:'boom'});Audio.fx.kill();G.pBullet=null;return;}
+    if(bx<b.x+b.w&&bx+bw>b.x&&by<b.y+b.h&&by+bh>b.y){a.alive=false;buzz(12);addScore(TYPES[a.t].pts);G.booms.push({x:b.x+((b.w-12)>>1),y:b.y,t:16,kind:'boom'});Audio.fx.kill();return true;}
   }
-  const sh=G.shaker;
-  if(sh&&bx<sh.x+8&&bx+bw>sh.x&&by<sh.y+11&&by+bh>sh.y){
-    const p=CFG.shakerPts[G.shots%15];addScore(p);G.booms.push({x:sh.x+4,y:sh.y+2,t:90,kind:'bonus',text:'+'+p});
-    G.shaker=null;Audio.loopStop();Audio.fx.shakerHit();G.pBullet=null;return;
+  const sh=G.shaker,tub=sh&&sh.kind==='tub',sw=tub?9:8,shh=tub?9:11;
+  if(sh&&bx<sh.x+sw&&bx+bw>sh.x&&by<sh.y+shh&&by+bh>sh.y){
+    G.shaker=null;Audio.loopStop();
+    if(tub){addScore(50);joinSpotter();}
+    else{const p=CFG.shakerPts[G.shots%15];addScore(p);G.booms.push({x:sh.x+4,y:sh.y+2,t:90,kind:'bonus',text:'+'+p});Audio.fx.shakerHit();}
+    return true;
   }
-  for(let i=0;i<G.aBullets.length;i++){const ab=G.aBullets[i];if(Math.abs(ab.x-pb.x)<=2&&by<ab.y+7&&by+bh>ab.y){G.aBullets.splice(i,1);G.booms.push({x:pb.x-3,y:pb.y,t:10,kind:'spark'});G.pBullet=null;return;}}
-  const h=hitRack(bx,by,bw,bh);if(h){damage(h.b,h.lx,h.ly);G.booms.push({x:pb.x-3,y:pb.y-1,t:6,kind:'spark'});G.pBullet=null;}
+  for(let i=0;i<G.aBullets.length;i++){const ab=G.aBullets[i];if(Math.abs(ab.x-pb.x)<=2&&by<ab.y+7&&by+bh>ab.y){G.aBullets.splice(i,1);G.booms.push({x:pb.x-3,y:pb.y,t:10,kind:'spark'});return true;}}
+  const h=hitRack(bx,by,bw,bh);if(h){damage(h.b,h.lx,h.ly);G.booms.push({x:pb.x-3,y:pb.y-1,t:6,kind:'spark'});return true;}
+  return false;
+}
+function spotterX(){return G.player.x+CFG.spotterGap;}
+// One spotter message at a time, shown just above the squat racks
+function spotMsg(t){G.booms=G.booms.filter(b=>!b.spot);G.booms.push({x:W/2,y:176,t:90,kind:'bonus',text:t,nobanner:true,spot:true});}
+function joinSpotter(){
+  G.spotter=true;const maxX=W-CFG.player.minX-CFG.player.w-CFG.spotterGap;if(G.player.x>maxX)G.player.x=maxX;
+  spotMsg('SPOTTER JOINED!');Audio.fx.life();buzz(30);
+}
+function loseSpotter(){
+  G.spotter=false;G.spotHit=0;const sx=spotterX();
+  G.booms.push({x:sx-1,y:G.player.y,t:18,kind:'boom'});spotMsg('SPOTTER DOWN!');
+  Audio.fx.kill();buzz([40,30,40]);if(!REDUCED)G.shake=6;
 }
 function moveAB(){
   const P=G.player;
   for(let i=G.aBullets.length-1;i>=0;i--){
     const b=G.aBullets[i];b.y+=b.v;if(G.frame%4===0)b.f^=1;
     const h=hitRack(b.x-1,b.y,3,7);if(h){damage(h.b,h.lx,h.ly);G.aBullets.splice(i,1);continue;}
-    if(b.y+7>=P.y+2&&b.y<P.y+CFG.player.h&&b.x+1>=P.x+1&&b.x-1<P.x+CFG.player.w-1){killPlayer();return;}
+    const hitAt=x=>b.y+7>=P.y+2&&b.y<P.y+CFG.player.h&&b.x+1>=x+1&&b.x-1<x+CFG.player.w-1;
+    if(hitAt(P.x)||(G.spotter&&hitAt(spotterX()))){
+      if(G.spotter){G.aBullets.splice(i,1);loseSpotter();continue;}  // the spotter takes the hit
+      killPlayer();return;
+    }
     if(b.y+7>=CFG.groundY){G.booms.push({x:b.x-3,y:CFG.groundY-6,t:12,kind:'spark'});G.aBullets.splice(i,1);}
   }
 }
 function shakerTick(){
   const sh=G.shaker,K=CFG.shaker;
   if(sh){sh.x+=sh.dir*K.speed;if(sh.x<-12||sh.x>W+4){G.shaker=null;Audio.loopStop();}return;}
-  if(++G.shakerTimer>K.interval&&aliveCount()>=K.minAliens){G.shakerTimer=0;const dir=G.shots%2?-1:1;G.shaker={x:dir>0?-8:W,y:K.y,dir};Audio.loopStart();}
+  if(++G.shakerTimer>K.interval&&aliveCount()>=K.minAliens){G.shakerTimer=0;const dir=G.shots%2?-1:1;const kind=!G.spotter&&Math.random()<CFG.tubChance?'tub':'shaker';G.shaker={x:dir>0?-9:W,y:K.y,dir,kind};Audio.loopStart();}
 }
 function tickBooms(){for(const b of G.booms)b.t--;G.booms=G.booms.filter(b=>b.t>0);}
 
@@ -509,22 +539,25 @@ function update(){
   if(G.player.fireT>0)G.player.fireT--;
   if(G.state==='intro'){if(--G.timer<=0){G.banner=null;G.state='play';}return;}
   if(G.state==='dying'){if(--G.timer<=0){G.lives--;if(G.lives<=0)gameOver();else{G.state='play';G.player.x=8;}}return;}
-  if(G.state==='cleared'){if(--G.timer<=0){G.wave++;startWave();showBanner(['SET '+(G.wave+1),setLabel(G.wave)],80,'intro');}return;}
+  if(G.state==='cleared'){if(--G.timer<=0){G.wave++;startWave();showBanner(['GET READY','SET '+(G.wave+1),setLabel(G.wave)],90,'intro');}return;}
   // play
-  const P=G.player,maxX=W-CFG.player.minX-CFG.player.w;
+  const P=G.player,maxX=W-CFG.player.minX-CFG.player.w-(G.spotter?CFG.spotterGap:0);
   if(keys.left)P.x=Math.max(CFG.player.minX,P.x-CFG.player.speed);
   if(keys.right)P.x=Math.min(maxX,P.x+CFG.player.speed);
-  if(keys.fire&&!G.pBullet){G.pBullet={x:(P.x|0)+6,y:P.y-3};P.fireT=10;G.shots++;Audio.fx.shoot();}
-  if(G.pBullet)movePB();
+  if(keys.fire&&!G.pbs.length){
+    G.pbs.push({x:(P.x|0)+6,y:P.y-3});if(G.spotter)G.pbs.push({x:(spotterX()|0)+6,y:P.y-3});
+    P.fireT=10;G.shots++;Audio.fx.shoot();
+  }
+  for(let i=G.pbs.length-1;i>=0;i--)if(moveShot(G.pbs[i]))G.pbs.splice(i,1);
   if(aliveCount()===0){
-    G.shaker=null;Audio.loopStop();G.aBullets=[];G.pBullet=null;
+    G.shaker=null;Audio.loopStop();G.aBullets=[];G.pbs=[];
     if(G.wave===9&&!G.prizeShown){G.prizeShown=true;Audio.fx.pb();G.state='prize';G.timer=90;doClaim();return;}
     Audio.fx.setDone();
     const cheer=CFG.cheers[Math.random()*CFG.cheers.length|0];
-    showBanner([cheer,'NEXT SET: '+(G.wave+2),setLabel(G.wave+1)],140,'cleared');return;
+    showBanner([cheer,'NEXT: SET '+(G.wave+2),setLabel(G.wave+1)],140,'cleared');return;
   }
   const n=aliveCount();
-  const steps=n<=4?1:1+(G.wave>=4?1:(G.wave>=1&&G.frame%2===0?1:0));
+  const L=lvl(),steps=n<=4?1:1+(L>=4?1:(L>=1&&G.frame%2===0?1:0));
   for(let i=0;i<steps;i++)stepAliens();
   if(G.invaded){G.invaded=false;G.lives=1;killPlayer();return;}
   alienFire();moveAB();
@@ -559,9 +592,9 @@ function drawTitle(){
     text(left?T.won+' OF '+T.max+' WON SO FAR':'ALL '+T.max+' VOUCHERS WON',W/2,108,left?C.red:C.greyLt);}
   else text(Online.available?'SIGN IN TO WIN':'GO ONLINE TO WIN',W/2,108,C.greyLt);
   text('REP VALUE TABLE',W/2,130,C.gold);
-  const rows=[[SPR.shaker[G.titleFrame],'GOLD SHAKER','???'],...TYPES.map(t=>[SPR[t.k][G.titleFrame],t.name,String(t.pts)])];
-  rows.forEach(([s,name,pts],i)=>{const y=143+i*12;spr(s,46-s.w/2,y+4-s.h/2);text(name,64,y,C.white,'left');text(pts,184,y,i===0?C.gold:C.white,'right');});
-  if(blink())text(TXT.start,W/2,218,C.gold);
+  const rows=[[SPR.shaker[G.titleFrame],'GOLD SHAKER','???'],[SPR.tub[G.titleFrame],'TUB = SPOTTER',''],...TYPES.map(t=>[SPR[t.k][G.titleFrame],t.name,String(t.pts)])];
+  rows.forEach(([s,name,pts],i)=>{const y=141+i*11;spr(s,46-s.w/2,y+4-s.h/2);text(name,64,y,i===1?C.red:C.white,'left');text(pts,184,y,i===0?C.gold:C.white,'right');});
+  if(blink())text(TXT.start,W/2,221,C.gold);
   text('NO LIMITS. NO EXCUSES.',W/2,238,C.grey);
 }
 function drawRacks(){
@@ -571,14 +604,17 @@ function drawRacks(){
 function drawGame(){
   drawRacks();
   for(const a of G.aliens){if(!a.alive)continue;const b=alienBox(a);spr(b.s,b.x,b.y);}
-  if(G.shaker)spr(SPR.shaker[Math.floor(G.frame/8)%2],G.shaker.x,G.shaker.y);
+  if(G.shaker)spr(SPR[G.shaker.kind==='tub'?'tub':'shaker'][Math.floor(G.frame/8)%2],G.shaker.x,G.shaker.y);
   const P=G.player;
   if(G.state==='dying'){
     const t=110-G.timer;
     if(t<28)spr((t>>2)%2?SPR.playerHit:SPR.player,P.x,P.y);
     else spr(SPR.pdie[Math.floor(G.frame/6)%2],P.x-1,P.y);
-  }else if(G.state!=='over')spr(P.fireT>0?SPR.playerLift:SPR.player,P.x,P.y);
-  if(G.pBullet)spr(SPR.bolt,G.pBullet.x-1,G.pBullet.y);
+  }else if(G.state!=='over'){
+    spr(P.fireT>0?SPR.playerLift:SPR.player,P.x,P.y);
+    if(G.spotter)spr(P.fireT>0?SPR.spotterLift:SPR.spotter,spotterX(),P.y);
+  }
+  for(const pb of G.pbs)spr(SPR.bolt,pb.x-1,pb.y);
   for(const b of G.aBullets){
     if(b.kind===0){for(let i=0;i<7;i++){const off=((i+b.f*2)%4<2)?-1:1;ctx.fillStyle=i%2?C.redDk:C.red;ctx.fillRect(b.x+off,b.y+i,1,1);}}
     else{ctx.fillStyle=C.red;ctx.fillRect(b.x,b.y,1,7);ctx.fillStyle=C.white;ctx.fillRect(b.x-1,b.y+(b.f?2:4),3,1);}
@@ -593,10 +629,14 @@ function drawGame(){
   for(let i=0;i<Math.min(G.lives-1,4);i++)spr(SPR.life,78+i*10,242);
   const sn=String(G.wave+1);text(sn,W-8,242,C.white,'right');text('SET',W-16-sn.length*8,242,C.gold,'right');
 }
+// Largest pixel size (16 or 8) at which a line fits inside the banner
+const fitSize=(t,size,max)=>{while(size>8&&t.length*size>max)size-=8;return size;};
 function drawBanner(){
   if(!G.banner)return;
-  const [a,b,c]=G.banner;panel(16,92,W-32,c?66:50);
-  text(a,W/2,102,C.gold);text(b,W/2,118,C.white,'center',c?8:16);if(c)text(c,W/2,138,C.red);
+  const [a,b,c]=G.banner,max=W-44;panel(16,92,W-32,c?66:50);
+  text(a,W/2,102,C.gold,'center',fitSize(a,8,max));
+  const bs=fitSize(b,16,max);text(b,W/2,bs===16?118:122,C.white,'center',bs);
+  if(c)text(c,W/2,140,C.red,'center',fitSize(c,8,max));
 }
 function drawOver(){
   panel(4,62,W-8,116,C.red);
@@ -855,9 +895,12 @@ const UI=(()=>{
         <h3>REP VALUES</h3>
         <table class="rv"><tbody>
           <tr><td>${img(SPR.shaker[0])}</td><td>Golden shaker</td><td class="n">50-300</td></tr>
+          <tr><td>${img(SPR.tub[0])}</td><td>Protein tub</td><td class="n">SPOTTER</td></tr>
           ${TYPES.map(t=>`<tr><td>${img(SPR[t.k][0])}</td><td>${t.name.charAt(0)+t.name.slice(1).toLowerCase()}</td><td class="n">${t.pts}</td></tr>`).join('')}
         </tbody></table>
         <p class="fine" style="text-align:left">The golden shaker flies across the top now and then. Its mystery value depends on how many shots you've taken.</p>
+        <h3>SPOTTER</h3>
+        <p>Every now and then a protein tub flies over instead of the shaker. Shoot it and a spotter in a red singlet joins you. You fire two shots at once, and your spotter takes the next hit for you. They stay until they're hit.</p>
         <h3>ENERGY (LIVES)</h3>
         <ul><li>You start with <span class="k">${CFG.lives} energy</span>.</li><li>Earn <span class="k">1 bonus energy every ${CFG.extraLifeEvery.toLocaleString()} reps</span>.</li><li>Each hit costs 1 energy.</li><li>If the equipment reaches your lifter, it's workout over.</li></ul>
         <h3>SQUAT RACKS</h3>
@@ -913,7 +956,7 @@ if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname)){
 }
 
 /* test hook: only with ?debug in the URL */
-if(/[?&]debug\b/.test(location.search))window.__RI={G,keys,Records,TYPES,Online,UI,step:n=>{for(let i=0;i<n;i++)update();draw();},start:()=>{startReq=true;},kill:()=>G.aliens.forEach(a=>a.alive=false),rackPixels:()=>G.racks.reduce((s,b)=>s+b.d.reduce((t,v)=>t+(v?1:0),0),0),spawnShaker:()=>{G.shakerTimer=CFG.shaker.interval+1;}};
+if(/[?&]debug\b/.test(location.search))window.__RI={G,keys,Records,TYPES,Online,UI,step:n=>{for(let i=0;i<n;i++)update();draw();},start:()=>{startReq=true;},kill:()=>G.aliens.forEach(a=>a.alive=false),rackPixels:()=>G.racks.reduce((s,b)=>s+b.d.reduce((t,v)=>t+(v?1:0),0),0),spawnShaker:()=>{G.shakerTimer=CFG.shaker.interval+1;},spawnTub:()=>{G.shaker={x:-9,y:CFG.shaker.y,dir:1,kind:'tub'};}};
 })();
 </script>
 

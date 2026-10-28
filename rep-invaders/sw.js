@@ -1,5 +1,5 @@
 // Offline cache for Rep Invaders. Bump VERSION when files change.
-const VERSION = 'rep-invaders-v1';
+const VERSION = 'rep-invaders-v2';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,6 +17,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // Leaderboard and sign-in always go straight to the network; only the game's own files,
+  // the pixel font and the sign-in library are kept for offline play.
+  const cacheable = url.origin === location.origin || /(^|\.)fonts\.(googleapis|gstatic)\.com$/.test(url.hostname) || url.hostname === 'cdn.jsdelivr.net';
+  if (!cacheable) return;
   // Page: network first so updates show up, cache as fallback for offline.
   if (req.mode === 'navigate') {
     e.respondWith(

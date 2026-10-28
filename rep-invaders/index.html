@@ -24,11 +24,12 @@
   --pixel:'Press Start 2P', ui-monospace, Menlo, Consolas, monospace;
   color-scheme:dark;
 }
+[hidden]{display:none!important}
 html,body{height:100%;overscroll-behavior:none}
 @supports (height:100dvh){html,body{height:100dvh}}
 body{
   margin:0;background:var(--bg);color:var(--white);font-family:var(--pixel);box-sizing:border-box;
-  display:grid;grid-template-columns:1fr;grid-template-rows:1fr auto;grid-template-areas:"stage" "legend";gap:12px;
+  display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr auto;grid-template-areas:"top" "stage" "legend";gap:12px;
   padding-top:max(12px,env(safe-area-inset-top,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
@@ -45,12 +46,46 @@ body{
              radial-gradient(ellipse at 50% 50%,transparent 60%,rgba(0,0,0,.35) 100%);}
 .legend{grid-area:legend;font-size:9px;line-height:1.7;color:var(--grey);letter-spacing:.08em;display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:center;text-align:center}
 .legend b{color:var(--gold);font-weight:400}
-.top,.dirs,.liftwrap{display:none}
+.top{grid-area:top;display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.dirs,.liftwrap{display:none}
 
 button{font-family:var(--pixel);touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 .small{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--edge);background:#121214;color:var(--gold);font-size:9px;letter-spacing:.06em}
 .small.on{background:#1f1f22}
+.small.acct{border-color:var(--gold-dk);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.sheet{position:relative;width:100%;max-width:380px;max-height:100%;overflow:auto;box-sizing:border-box;background:#0f0f10;border:2px solid var(--gold);border-radius:6px;
+  padding:24px 18px 18px;box-shadow:0 0 0 4px #000,0 20px 60px rgba(0,0,0,.8);font-size:10px;line-height:1.7;color:var(--white)}
+.sheet h2{margin:0 0 14px;font-size:13px;line-height:1.5;color:var(--gold);font-weight:400;text-align:center;text-wrap:balance}
+.sheet p{margin:0 0 10px}
+.close{position:absolute;top:6px;right:6px;width:34px;height:34px;border:none;background:none;color:var(--grey);font-size:13px}
+.tabs{display:flex;gap:6px;margin-bottom:16px}
+.tabs button{flex:1;height:34px;border:1px solid var(--edge);background:#141416;color:var(--grey);font-size:9px;border-radius:4px}
+.tabs button[aria-selected="true"]{color:#1a1205;background:var(--gold);border-color:var(--gold)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field label{font-size:9px;color:var(--gold);letter-spacing:.06em}
+.field input{font:16px ui-monospace,Menlo,Consolas,monospace;padding:10px 12px;border-radius:4px;border:1px solid var(--edge);background:#050505;color:var(--white);
+  width:100%;box-sizing:border-box;user-select:text;-webkit-user-select:text}
+.field input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.go{width:100%;height:46px;border:none;border-radius:4px;background:var(--gold);color:#1a1205;font-size:11px;margin-top:4px}
+.go:disabled{opacity:.5;cursor:default}
+.go.alt{background:#1a1a1c;color:var(--white);border:1px solid var(--edge)}
+.link{display:block;margin:10px auto 0;background:none;border:none;color:var(--gold);font-size:9px;text-decoration:underline;padding:6px}
+.msg{min-height:1.7em;font-size:9px;color:var(--red);margin:8px 0 0;text-align:center}
+.msg.ok{color:var(--gold)}
+.fine{font-size:8px;color:var(--grey);margin:14px 0 0;text-align:center}
+.board-wrap{overflow-x:auto}
+table.board{width:100%;border-collapse:collapse;font-size:9px}
+.board th{color:var(--gold);font-weight:400;text-align:left;padding:6px 4px;border-bottom:1px solid var(--edge)}
+.board td{padding:8px 4px;border-bottom:1px solid #1d1d1f;white-space:nowrap}
+.board .n{text-align:right;font-variant-numeric:tabular-nums}
+.board tr.me td{color:var(--gold)}
+.stat{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #1d1d1f}
+.stat span:first-child{color:var(--gold)}
+.voucher{margin:16px 0 6px;padding:14px 10px;border:2px dashed var(--gold);text-align:center}
+.voucher b{display:block;font-size:13px;letter-spacing:.08em;color:var(--white);font-weight:400;margin:10px 0;word-break:break-all;user-select:all;-webkit-user-select:all}
 .dir{
   width:76px;height:76px;border-radius:50%;border:none;font-size:18px;color:#1a1a1a;text-shadow:0 1px 0 rgba(255,255,255,.35);
   background:radial-gradient(circle at 36% 30%,#f4f4ee 0%,#bdbdb6 34%,#7d7d78 70%,#444442 100%);
@@ -83,6 +118,8 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 </style>
 
 <div class="top">
+  <button id="bAccount" class="small acct" aria-label="Sign in or view your account">SIGN IN</button>
+  <button id="bBoard" class="small" aria-label="Show the top 10 leaderboard">TOP 10</button>
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
   <button id="bSound" class="small" aria-label="Toggle sound">SOUND ON</button>
 </div>
@@ -96,6 +133,15 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
   <span><b>← →</b> MOVE</span><span><b>SPACE</b> LIFT</span><span><b>ENTER</b> START WORKOUT</span><span><b>P</b> REST</span><span><b>M</b> SOUND</span>
 </div>
 
+<div class="modal" id="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <button class="close" id="mClose" aria-label="Close">✕</button>
+    <h2 id="mTitle"></h2>
+    <div id="mBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -221,7 +267,8 @@ Records.load();
 const G={state:'title',score:0,lives:CFG.lives,wave:0,extraGiven:false,paused:false,frame:0,timer:0,
   player:null,pBullet:null,aBullets:[],aliens:[],ptr:0,dx:CFG.alien.step,dropPending:false,racks:[],
   shaker:null,shakerTimer:0,shots:0,booms:[],fireTimer:0,beatIdx:0,lastBeat:0,invaded:false,
-  banner:null,shake:0,newPB:false,pendingReload:false,titleFrame:0};
+  banner:null,shake:0,newPB:false,pendingReload:false,titleFrame:0,
+  prizeShown:false,prize:null,save:'',pendingResult:null};
 const keys={left:false,right:false,fire:false};
 let startReq=false;
 
@@ -234,7 +281,7 @@ function startWave(){
 }
 function setLabel(i){return CFG.setNames[Math.min(i,CFG.setNames.length-1)];}
 function newGame(){
-  Object.assign(G,{score:0,lives:CFG.lives,wave:0,extraGiven:false,shots:0,booms:[],paused:false,newPB:false});
+  Object.assign(G,{score:0,lives:CFG.lives,wave:0,extraGiven:false,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:'',pendingResult:null});
   makeRacks();startWave();showBanner(["LET'S GO!",'SET 1',setLabel(0)],100,'intro');
 }
 function showBanner(lines,frames,state){G.banner=lines;G.timer=frames;G.state=state;}
@@ -290,6 +337,38 @@ function gameOver(){
   if(G.pendingReload){Records.submit(G.score,G.wave+1);location.reload();return;}
   G.newPB=Records.submit(G.score,G.wave+1);G.state='over';G.timer=90;Audio.loopStop();
   if(G.newPB&&G.score>0)Audio.fx.pb();else Audio.fx.over();
+  saveResult({score:G.score,set:G.wave+1});
+}
+const short=m=>String(m||'').toUpperCase().replace(/[^A-Z0-9 .,!?:'$-]/g,'').slice(0,26);
+function saveResult(r){
+  G.pendingResult=null;
+  if(r.score<=0){G.save='';return;}
+  if(!Online.available){G.save='OFFLINE: SAVED ON DEVICE';return;}
+  if(!Online.ready){G.save='SIGN IN TO SAVE SCORE';G.pendingResult=r;return;}
+  G.save='SAVING SCORE...';
+  Online.submit(r.score,r.set).then(()=>{G.save='SAVED TO TOP 10 BOARD';Online.refresh();}).catch(e=>{G.save=short(e.message);});
+}
+// Set 10 voucher
+const CLAIM_KEY='nl-ri-pending-claim';
+function doClaim(){
+  if(!Online.available){G.prize={status:'offline'};return;}
+  if(!Online.ready){
+    G.prize={status:'signin'};
+    try{localStorage.setItem(CLAIM_KEY,JSON.stringify({score:G.score,sets:10}))}catch(e){}
+    UI.open(Online.user?'nick':'auth',{tab:'join',intro:'Sign in or join to claim your $100 voucher.'});
+    return;
+  }
+  G.prize={status:'claiming'};
+  Online.claim(G.score,10).then(code=>{
+    try{localStorage.removeItem(CLAIM_KEY)}catch(e){}
+    G.prize=code?{status:'code',code}:{status:'desk'};Online.refresh();
+  }).catch(e=>{G.prize={status:'error',msg:short(e.message)};});
+}
+// Claim saved for later (player won before signing in, then closed the game)
+function claimSaved(){
+  let c=null;try{c=JSON.parse(localStorage.getItem(CLAIM_KEY)||'null')}catch(e){}
+  if(!c||!Online.ready||G.state==='prize')return;
+  Online.claim(c.score,c.sets).then(code=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){};Online.refresh().then(()=>{if(code)UI.open('account');});}).catch(()=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){}});
 }
 function movePB(){
   const pb=G.pBullet;pb.y-=CFG.bullet.speed;
@@ -329,6 +408,11 @@ function update(){
   if(G.paused)return;
   if(G.state==='title'){if(G.frame%30===0)G.titleFrame^=1;if(startReq){startReq=false;newGame();}return;}
   if(G.state==='over'){if(G.timer>0)G.timer--;if(startReq){startReq=false;if(G.timer<=0)newGame();}tickBooms();return;}
+  if(G.state==='prize'){
+    if(G.timer>0)G.timer--;tickBooms();
+    if(startReq){startReq=false;if(G.timer<=0&&!UI.isOpen)showBanner(['KEEP LIFTING!','NEXT SET: 11',setLabel(10)],140,'cleared');}
+    return;
+  }
   startReq=false;tickBooms();
   if(G.player.fireT>0)G.player.fireT--;
   if(G.state==='intro'){if(--G.timer<=0){G.banner=null;G.state='play';}return;}
@@ -341,7 +425,9 @@ function update(){
   if(keys.fire&&!G.pBullet){G.pBullet={x:(P.x|0)+6,y:P.y-3};P.fireT=10;G.shots++;Audio.fx.shoot();}
   if(G.pBullet)movePB();
   if(aliveCount()===0){
-    G.shaker=null;Audio.loopStop();G.aBullets=[];G.pBullet=null;Audio.fx.setDone();
+    G.shaker=null;Audio.loopStop();G.aBullets=[];G.pBullet=null;
+    if(G.wave===9&&!G.prizeShown){G.prizeShown=true;Audio.fx.pb();G.state='prize';G.timer=90;doClaim();return;}
+    Audio.fx.setDone();
     const cheer=CFG.cheers[Math.random()*CFG.cheers.length|0];
     showBanner([cheer,'NEXT SET: '+(G.wave+2),setLabel(G.wave+1)],140,'cleared');return;
   }
@@ -417,28 +503,47 @@ function drawBanner(){
 function drawOver(){
   panel(4,62,W-8,116,C.red);
   text('WORKOUT OVER',W/2,74,C.red,'center',16);
-  text('TOTAL REPS: '+pad4(G.score),W/2,102);
-  text('SETS COMPLETED: '+G.wave,W/2,116);
-  if(G.newPB&&G.score>0&&blink(15))text('NEW PERSONAL BEST!',W/2,136,C.gold);
+  text('TOTAL REPS: '+pad4(G.score),W/2,96);
+  text('SETS COMPLETED: '+G.wave,W/2,108);
+  if(G.newPB&&G.score>0&&blink(15))text('NEW PERSONAL BEST!',W/2,122,C.gold);
+  if(G.save)text(G.save,W/2,138,C.greyLt);
   if(G.timer<=0&&blink())text(TXT.again,W/2,158,C.gold);
+}
+function drawPrize(){
+  panel(4,56,W-8,132,C.gold);
+  text('SET 10 CRUSHED!',W/2,66,C.white);
+  text("YOU'VE WON A",W/2,82,C.red);
+  text('$100 VOUCHER',W/2,94,C.gold,'center',16);
+  const P=G.prize||{status:'claiming'};
+  if(P.status==='code'){
+    ctx.fillStyle=C.gold;[[20,118,W-40,1],[20,136,W-40,1],[20,118,1,19],[W-21,118,1,19]].forEach(r=>ctx.fillRect(...r));
+    text(P.code,W/2,124,C.white);
+    text('SHOW THIS AT THE',W/2,144,C.greyLt);text('NO LIMITS FRONT DESK',W/2,154,C.greyLt);
+  }else if(P.status==='claiming'){if(blink(10))text('CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
+  else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
+  else if(P.status==='desk'){text('ALL CODES CLAIMED.',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
+  else if(P.status==='offline'){text('GO ONLINE AND SIGN IN',W/2,124,C.white);text('TO CLAIM YOUR VOUCHER',W/2,138,C.greyLt);}
+  else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
+  if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,172,C.gold);
 }
 function draw(){
   let sx=0,sy=0;if(G.shake>0&&!G.paused){sx=(Math.random()*3|0)-1;sy=(Math.random()*3|0)-1;}
   ctx.setTransform(S,0,0,S,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
   ctx.setTransform(S,0,0,S,sx*S,sy*S);ctx.imageSmoothingEnabled=false;ctx.textBaseline='top';
   drawHeader();
-  if(G.state==='title')drawTitle();else{drawGame();if(G.state==='intro'||G.state==='cleared')drawBanner();if(G.state==='over')drawOver();}
+  if(G.state==='title')drawTitle();else{drawGame();if(G.state==='intro'||G.state==='cleared')drawBanner();if(G.state==='over')drawOver();if(G.state==='prize')drawPrize();}
   ctx.setTransform(S,0,0,S,0,0);
   if(G.paused){panel(30,98,W-60,52);text('REST',W/2,108,C.gold,'center',16);text(TXT.resume,W/2,132,C.white);}
 }
 
 /* ================= INPUT ================= */
 const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'fire',ArrowUp:'fire',KeyW:'fire'};
-const canStart=()=>G.state==='title'||(G.state==='over'&&G.timer<=0);
+const canStart=()=>G.state==='title'||((G.state==='over'||G.state==='prize')&&G.timer<=0);
 const sndBtn=document.getElementById('bSound'),restBtn=document.getElementById('bRest');
 function togglePause(){if(['play','dying','cleared','intro'].includes(G.state)){G.paused=!G.paused;restBtn.textContent=G.paused?'RESUME':'REST';if(G.paused)Audio.loopStop();else if(G.shaker)Audio.loopStart();}}
 function toggleMute(){Audio.muted=!Audio.muted;sndBtn.textContent=Audio.muted?'SOUND OFF':'SOUND ON';if(!Audio.muted&&G.shaker&&!G.paused)Audio.loopStart();}
 addEventListener('keydown',e=>{
+  if(UI.isOpen){if(e.code==='Escape')UI.close();return;}
   Audio.init();
   const k=KEYMAP[e.code];if(k){keys[k]=true;e.preventDefault();}
   if((e.code==='Enter'||e.code==='Space')&&canStart())startReq=true;
@@ -446,7 +551,7 @@ addEventListener('keydown',e=>{
   if(e.code==='KeyM'&&!e.repeat)toggleMute();
 });
 addEventListener('keyup',e=>{const k=KEYMAP[e.code];if(k)keys[k]=false;});
-function releaseAll(){keys.left=keys.right=keys.fire=false;document.querySelectorAll('[data-k].on').forEach(b=>b.classList.remove('on'));}
+function releaseAll(){if(typeof keys==='undefined')return;keys.left=keys.right=keys.fire=false;document.querySelectorAll('[data-k].on').forEach(b=>b.classList.remove('on'));}
 addEventListener('blur',releaseAll);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll();if(G.state==='play'&&!G.paused)togglePause();}});
 // Multi-touch: each button tracks its own pointers, so move + lift work together.
@@ -460,8 +565,154 @@ document.querySelectorAll('[data-k]').forEach(btn=>{
 restBtn.addEventListener('click',()=>{Audio.init();togglePause();});
 sndBtn.addEventListener('click',()=>{Audio.init();toggleMute();});
 cv.addEventListener('pointerdown',()=>{Audio.init();if(canStart())startReq=true;else if(G.paused)togglePause();});
+document.getElementById('bAccount').addEventListener('click',()=>UI.open(!Online.available?'offline':Online.ready?'account':Online.user?'nick':'auth'));
+document.getElementById('bBoard').addEventListener('click',()=>UI.open('board'));
 ['touchend','click'].forEach(ev=>addEventListener(ev,()=>Audio.init(),{passive:true}));
 document.addEventListener('touchmove',e=>{if(e.target.closest('button,canvas'))e.preventDefault();},{passive:false});
+
+/* ================= ONLINE: sign-in + leaderboard (Supabase) ================= */
+const SB_URL='https://nkkhbtrrytctpfwjenrz.supabase.co',SB_KEY='sb_publishable_1bZLkfdxFTM4w3SWqPklDw_l3leLxxl';
+const Online=(()=>{
+  let sb=null;const st={user:null,me:null,fns:[]};
+  try{if(window.supabase&&window.supabase.createClient)sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'nl-rep-invaders-auth'}});}catch(e){sb=null;}
+  const emit=()=>st.fns.forEach(f=>{try{f()}catch(e){}});
+  const NICK_KEY='nl-ri-pending-nick';
+  async function rpc(name,args){if(!sb)throw new Error('Leaderboard is offline');const {data,error}=await sb.rpc(name,args||{});if(error)throw new Error(error.message);return data;}
+  async function refresh(){if(!sb||!st.user){st.me=null;emit();return;}try{const d=await rpc('get_me');st.me=(d&&d[0])||null;}catch(e){st.me=null;}emit();}
+  async function adoptPendingNick(){if(st.me&&st.me.nickname)return;let n=null;try{n=localStorage.getItem(NICK_KEY)}catch(e){}if(!n)return;try{await rpc('set_nickname',{p_nickname:n});localStorage.removeItem(NICK_KEY);}catch(e){}await refresh();}
+  async function init(){
+    if(!sb)return;
+    try{const {data}=await sb.auth.getSession();st.user=data.session?data.session.user:null;}catch(e){}
+    await refresh();await adoptPendingNick();
+    sb.auth.onAuthStateChange((ev,session)=>{
+      const u=session?session.user:null,changed=(u&&u.id)!==(st.user&&st.user.id);st.user=u;
+      if(ev==='PASSWORD_RECOVERY')setTimeout(()=>UI.open('newpass'),0);
+      if(changed)setTimeout(()=>{refresh().then(adoptPendingNick)},0);
+    });
+  }
+  const authErr=e=>{const m=(e&&e.message)||'Something went wrong';
+    if(/invalid login/i.test(m))return 'Wrong email or password';
+    if(/already registered/i.test(m))return 'That email already has an account. Sign in instead.';
+    if(/rate limit/i.test(m))return 'Too many attempts. Try again in a few minutes.';
+    if(/not confirmed/i.test(m))return 'Check your email and tap the confirm link first.';
+    return m;};
+  return{
+    get available(){return!!sb},get user(){return st.user},get me(){return st.me},
+    get ready(){return!!(st.user&&st.me&&st.me.nickname)},
+    on(f){st.fns.push(f)},init,refresh,authErr,
+    async signUp(email,password,nickname){
+      const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0].split('?')[0]}});if(error)throw error;
+      if(!data.session){try{localStorage.setItem(NICK_KEY,nickname)}catch(e){}return'confirm';}
+      st.user=data.user;await rpc('set_nickname',{p_nickname:nickname});await refresh();return'ok';
+    },
+    async signIn(email,password){
+      const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;
+      st.user=data.user;await refresh();await adoptPendingNick();return st.me&&st.me.nickname?'ok':'nick';
+    },
+    async setNickname(n){await rpc('set_nickname',{p_nickname:n});await refresh();},
+    async signOut(){try{await sb.auth.signOut();}catch(e){}st.user=null;st.me=null;emit();},
+    async resetPassword(email){const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.href.split('#')[0].split('?')[0]});if(error)throw error;},
+    async newPassword(pw){const {error}=await sb.auth.updateUser({password:pw});if(error)throw error;},
+    submit:(score,set)=>rpc('submit_score',{p_score:score,p_set:set}),
+    claim:(score,sets)=>rpc('claim_voucher',{p_score:score,p_sets_completed:sets}),
+    board:period=>rpc('get_leaderboard',{p_period:period})
+  };
+})();
+
+/* ================= UI: account + leaderboard sheets ================= */
+const UI=(()=>{
+  const modal=document.getElementById('modal'),title=document.getElementById('mTitle'),body=document.getElementById('mBody');
+  let view=null,resumeAfter=false,opts={};
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const $=id=>document.getElementById(id);
+  function open(v,o){
+    if(G.state==='play'&&!G.paused){togglePause();resumeAfter=true;}
+    releaseAll();view=v;opts=o||{};modal.hidden=false;render();
+    const f=body.querySelector('input,button');if(f&&!TOUCH)setTimeout(()=>f.focus(),30);
+  }
+  function close(){modal.hidden=true;view=null;if(resumeAfter&&G.paused)togglePause();resumeAfter=false;}
+  function busy(form,on,label){const b=form.querySelector('.go');if(b){b.disabled=on;if(label)b.textContent=label;}}
+  function say(text,ok){const m=$('mMsg');if(m){m.textContent=text||'';m.className='msg'+(ok?' ok':'');}}
+  function nickField(val){return`<div class="field"><label for="fNick">NICKNAME (SHOWN ON THE BOARD)</label><input id="fNick" maxlength="12" autocomplete="nickname" autocapitalize="characters" required value="${esc(val||'')}" placeholder="3-12 letters or numbers"></div>`;}
+  function render(){
+    if(view==='auth'){
+      const tab=opts.tab==='join'?'join':'signin';
+      title.textContent=tab==='join'?'JOIN THE BOARD':'SIGN IN';
+      body.innerHTML=`${opts.intro?`<p class="msg ok">${esc(opts.intro)}</p>`:''}
+        <div class="tabs" role="tablist"><button role="tab" id="tSign" aria-selected="${tab==='signin'}">SIGN IN</button><button role="tab" id="tJoin" aria-selected="${tab==='join'}">JOIN</button></div>
+        <form id="fAuth" novalidate>
+          ${tab==='join'?nickField():''}
+          <div class="field"><label for="fEmail">EMAIL</label><input id="fEmail" type="email" autocomplete="email" inputmode="email" required></div>
+          <div class="field"><label for="fPw">PASSWORD</label><input id="fPw" type="password" minlength="6" autocomplete="${tab==='join'?'new-password':'current-password'}" required placeholder="${tab==='join'?'At least 6 characters':''}"></div>
+          <button class="go" type="submit">${tab==='join'?'JOIN':'SIGN IN'}</button>
+          <p class="msg" id="mMsg" role="status"></p>
+        </form>
+        ${tab==='signin'?'<button class="link" id="lForgot" type="button">Forgot password?</button>':''}
+        <p class="fine">Only your nickname appears on the leaderboard. Your email stays private and is never shown.</p>`;
+      $('tSign').onclick=()=>{opts.tab='signin';render();};$('tJoin').onclick=()=>{opts.tab='join';render();};
+      if($('lForgot'))$('lForgot').onclick=async()=>{const em=$('fEmail').value.trim();if(!em){say('Type your email above first');return;}
+        try{await Online.resetPassword(em);say('Check your email for a reset link',true);}catch(e){say(Online.authErr(e));}};
+      $('fAuth').onsubmit=async ev=>{
+        ev.preventDefault();const f=ev.target,em=$('fEmail').value.trim(),pw=$('fPw').value,nk=$('fNick')?$('fNick').value.trim():'';
+        if(tab==='join'&&!/^[A-Za-z0-9 ]{3,12}$/.test(nk)){say('Nickname must be 3-12 letters or numbers');return;}
+        if(!/^\S+@\S+\.\S+$/.test(em)){say('Enter a valid email');return;}
+        if(pw.length<6){say('Password must be at least 6 characters');return;}
+        busy(f,true,tab==='join'?'JOINING...':'SIGNING IN...');say('');
+        try{
+          const r=tab==='join'?await Online.signUp(em,pw,nk):await Online.signIn(em,pw);
+          if(r==='confirm'){title.textContent='CHECK YOUR EMAIL';body.innerHTML=`<p>We sent a confirm link to <b>${esc(em)}</b>. Tap it, then come back and sign in.</p><button class="go" id="bOk">OK</button>`;$('bOk').onclick=close;return;}
+          if(r==='nick'){view='nick';render();return;}
+          close();
+        }catch(e){busy(f,false,tab==='join'?'JOIN':'SIGN IN');say(e.message&&/nickname/i.test(e.message)?e.message:Online.authErr(e));}
+      };
+    }else if(view==='nick'){
+      title.textContent='PICK A NICKNAME';
+      body.innerHTML=`<form id="fNickF" novalidate>${nickField(Online.me&&Online.me.nickname)}<button class="go" type="submit">SAVE</button><p class="msg" id="mMsg" role="status"></p></form>`;
+      $('fNickF').onsubmit=async ev=>{ev.preventDefault();const f=ev.target,nk=$('fNick').value.trim();
+        if(!/^[A-Za-z0-9 ]{3,12}$/.test(nk)){say('Nickname must be 3-12 letters or numbers');return;}
+        busy(f,true,'SAVING...');try{await Online.setNickname(nk);close();}catch(e){busy(f,false,'SAVE');say(e.message);}};
+    }else if(view==='newpass'){
+      title.textContent='NEW PASSWORD';
+      body.innerHTML=`<form id="fNP" novalidate><div class="field"><label for="fPw">NEW PASSWORD</label><input id="fPw" type="password" minlength="6" autocomplete="new-password" required></div><button class="go" type="submit">SAVE PASSWORD</button><p class="msg" id="mMsg" role="status"></p></form>`;
+      $('fNP').onsubmit=async ev=>{ev.preventDefault();const f=ev.target,pw=$('fPw').value;if(pw.length<6){say('At least 6 characters');return;}
+        busy(f,true,'SAVING...');try{await Online.newPassword(pw);say('Password saved',true);setTimeout(close,900);}catch(e){busy(f,false,'SAVE PASSWORD');say(Online.authErr(e));}};
+    }else if(view==='account'){
+      const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
+      body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
+        <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Show this code at the No Limits front desk.</div></div>`:'<p class="fine">Clear SET 10 to win a $100 No Limits gift voucher.</p>'}
+        <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
+        <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
+      $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};
+    }else if(view==='board'){
+      const per=opts.period==='month'?'month':'all';title.textContent='TOP 10';
+      body.innerHTML=`<div class="tabs" role="tablist"><button role="tab" id="tAll" aria-selected="${per==='all'}">ALL-TIME</button><button role="tab" id="tMon" aria-selected="${per==='month'}">THIS MONTH</button></div>
+        <div class="board-wrap" id="bWrap"><p class="fine">Loading...</p></div>
+        ${Online.ready?'':'<button class="link" id="lJoin" type="button">Sign in to get on the board</button>'}`;
+      $('tAll').onclick=()=>{opts.period='all';render();};$('tMon').onclick=()=>{opts.period='month';render();};
+      if($('lJoin'))$('lJoin').onclick=()=>{view=Online.user?'nick':'auth';opts={tab:'join'};render();};
+      if(!Online.available){$('bWrap').innerHTML='<p class="fine">The leaderboard needs an internet connection.</p>';return;}
+      Online.board(per).then(rows=>{
+        if(view!=='board')return;const mine=Online.me&&Online.me.nickname;
+        $('bWrap').innerHTML=rows&&rows.length?`<table class="board"><thead><tr><th>#</th><th>NAME</th><th class="n">REPS</th><th class="n">SET</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.nickname===mine?'me':''}"><td>${r.rank}</td><td>${esc(r.nickname)}</td><td class="n">${r.score}</td><td class="n">${r.set_reached}</td></tr>`).join('')}</tbody></table>`:`<p class="fine">No scores yet${per==='month'?' this month':''}. Be the first!</p>`;
+      }).catch(()=>{if(view==='board')$('bWrap').innerHTML='<p class="fine">Could not load the leaderboard. Check your connection.</p>';});
+    }else{
+      title.textContent='OFFLINE';body.innerHTML='<p>The leaderboard and sign-in need an internet connection. You can still play, and your personal best is saved on this device.</p><button class="go" id="bOk">OK</button>';$('bOk').onclick=close;
+    }
+  }
+  document.getElementById('mClose').onclick=close;
+  modal.addEventListener('pointerdown',e=>{if(e.target===modal)close();});
+  return{open,close,get isOpen(){return!modal.hidden},refresh(){if(!modal.hidden&&view==='account')render();}};
+})();
+const accBtn=document.getElementById('bAccount');
+Online.on(()=>{
+  accBtn.textContent=Online.ready?Online.me.nickname:'SIGN IN';UI.refresh();
+  if(!Online.ready)return;
+  if(G.state==='over'&&G.pendingResult)saveResult(G.pendingResult);
+  if(G.state==='prize'&&G.prize&&G.prize.status==='signin')doClaim();
+  else claimSaved();
+});
+Online.init();
 
 /* ================= SCALING + LOOP ================= */
 const stage=document.getElementById('stage'),crt=document.getElementById('crt');
@@ -487,7 +738,7 @@ if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname)){
 }
 
 /* test hook: only with ?debug in the URL */
-if(/[?&]debug\b/.test(location.search))window.__RI={G,keys,Records,TYPES,step:n=>{for(let i=0;i<n;i++)update();draw();},start:()=>{startReq=true;},kill:()=>G.aliens.forEach(a=>a.alive=false),rackPixels:()=>G.racks.reduce((s,b)=>s+b.d.reduce((t,v)=>t+(v?1:0),0),0),spawnShaker:()=>{G.shakerTimer=CFG.shaker.interval+1;}};
+if(/[?&]debug\b/.test(location.search))window.__RI={G,keys,Records,TYPES,Online,UI,step:n=>{for(let i=0;i<n;i++)update();draw();},start:()=>{startReq=true;},kill:()=>G.aliens.forEach(a=>a.alive=false),rackPixels:()=>G.racks.reduce((s,b)=>s+b.d.reduce((t,v)=>t+(v?1:0),0),0),spawnShaker:()=>{G.shakerTimer=CFG.shaker.interval+1;}};
 })();
 </script>
 

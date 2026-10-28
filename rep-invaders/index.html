@@ -34,9 +34,9 @@
   color-scheme:dark;
 }
 [hidden]{display:none!important}
-html,body{height:100%;overscroll-behavior:none}
-@supports (height:100dvh){html,body{height:100dvh}}
+html{height:100%;overscroll-behavior:none;background:var(--bg)}
 body{
+  position:fixed;inset:0;height:auto;overscroll-behavior:none;
   margin:0;background:var(--bg);color:var(--white);font-family:var(--pixel);box-sizing:border-box;
   display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr auto;grid-template-areas:"top" "stage" "legend";gap:12px;
   padding-top:max(12px,env(safe-area-inset-top,0px));padding-bottom:max(12px,env(safe-area-inset-bottom,0px));
@@ -138,8 +138,8 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
   .legend{display:none}
   .top{grid-area:top;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:440px;justify-self:center}
   .top .acct{grid-column:1/-1;max-width:none;height:40px;font-size:10px}
-  .dirs{grid-area:dirs;display:flex;align-items:center;gap:22px;padding:10px 0 12px 10px}
-  .liftwrap{grid-area:lift;display:flex;align-items:center;justify-content:center;padding:6px 10px 12px 0}
+  .dirs{grid-area:dirs;display:flex;align-items:center;gap:22px;padding:14px 0 18px 10px}
+  .liftwrap{grid-area:lift;display:flex;align-items:center;justify-content:center;padding:10px 10px 18px 0}
 }
 @media (pointer:coarse) and (orientation:landscape){
   body{grid-template-columns:auto 1fr auto;grid-template-rows:auto 1fr;grid-template-areas:"dirs stage top" "dirs stage lift";gap:14px}
@@ -179,6 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
+const APP_VERSION='1.16';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -860,7 +861,8 @@ const UI=(()=>{
         <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Use your code when you <a href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="color:var(--gold)">join or renew online</a>, or as a credit towards your weekly direct debit if you're already a member.</li></ul>
         <h3>TOP 10</h3>
         <p>Sign in and every finished game is saved. Chase the all-time and monthly Top 10 boards.</p>
-      </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>`;
+      </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>
+      <p class="fine">Version ${APP_VERSION}</p>`;
       $('bOk').onclick=close;
     }else{
       title.textContent='OFFLINE';body.innerHTML='<p>The leaderboard and sign-in need an internet connection. You can still play, and your personal best is saved on this device.</p><button class="go" id="bOk">OK</button>';$('bOk').onclick=close;

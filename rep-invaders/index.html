@@ -93,6 +93,16 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
 .board tr.me td{color:var(--gold)}
 .stat{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #1d1d1f}
 .stat span:first-child{color:var(--gold)}
+.rules h3{margin:18px 0 8px;font-size:10px;font-weight:400;color:var(--gold);letter-spacing:.06em}
+.rules h3:first-child{margin-top:0}
+.rules ul{margin:0;padding-left:16px}
+.rules li{margin:0 0 6px}
+.rules .k{color:var(--gold)}
+.rv{width:100%;border-collapse:collapse}
+.rv td{padding:5px 4px;border-bottom:1px solid #1d1d1f;vertical-align:middle}
+.rv td:first-child{width:34px}
+.rv img{display:block;image-rendering:pixelated;height:18px;width:auto;margin:auto}
+.rv .n{text-align:right;color:var(--gold);white-space:nowrap}
 .voucher{margin:16px 0 6px;padding:14px 10px;border:2px dashed var(--gold);text-align:center}
 .voucher b{display:block;font-size:13px;letter-spacing:.08em;color:var(--white);font-weight:400;margin:10px 0;word-break:break-all;user-select:all;-webkit-user-select:all}
 .dir{
@@ -112,26 +122,28 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
 .dir.on,.lift.on{transform:translateY(4px);box-shadow:0 0 0 5px #141416,0 0 0 7px #3a3a3d,0 0 0 8px #050505,0 3px 0 7px #050505,inset 0 -3px 8px rgba(0,0,0,.5),inset 0 6px 10px rgba(0,0,0,.35)}
 
 @media (pointer:coarse){
-  .small{padding:0 9px;font-size:8px}
+  .small{padding:0 6px;font-size:8px;white-space:nowrap}
   body{grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "stage stage" "dirs lift";gap:10px}
   .legend{display:none}
-  .top{grid-area:top;display:flex;justify-content:flex-end;gap:8px}
+  .top{grid-area:top;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%;max-width:440px;justify-self:center}
+  .top .acct{grid-column:1/-1;max-width:none;height:40px;font-size:10px}
   .dirs{grid-area:dirs;display:flex;align-items:center;gap:22px;padding:10px 0 12px 10px}
   .liftwrap{grid-area:lift;display:flex;align-items:center;justify-content:center;padding:6px 10px 12px 0}
 }
 @media (pointer:coarse) and (orientation:landscape){
   body{grid-template-columns:auto 1fr auto;grid-template-rows:auto 1fr;grid-template-areas:"dirs stage top" "dirs stage lift";gap:14px}
   .dirs{align-self:end;padding:0 0 14px 10px}
-  .top{align-self:start;justify-content:center}
+  .top{align-self:start;grid-template-columns:1fr 1fr;width:190px}
   .liftwrap{align-self:end;padding:0 10px 14px 0}
 }
 </style>
 
 <div class="top">
   <button id="bAccount" class="small acct" aria-label="Sign in or view your account">SIGN IN TO WIN</button>
+  <button id="bRules" class="small" aria-label="How to play and rules">RULES</button>
   <button id="bBoard" class="small" aria-label="Show the top 10 leaderboard">TOP 10</button>
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
-  <button id="bSound" class="small" aria-label="Toggle sound">SOUND ON</button>
+  <button id="bSound" class="small" aria-label="Toggle sound">SOUND</button>
 </div>
 <div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas></div></div>
 <div class="dirs">
@@ -558,7 +570,7 @@ const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space
 const canStart=()=>G.state==='title'||((G.state==='over'||G.state==='prize')&&G.timer<=0);
 const sndBtn=document.getElementById('bSound'),restBtn=document.getElementById('bRest');
 function togglePause(){if(['play','dying','cleared','intro'].includes(G.state)){G.paused=!G.paused;restBtn.textContent=G.paused?'RESUME':'REST';if(G.paused)Audio.loopStop();else if(G.shaker)Audio.loopStart();}}
-function toggleMute(){Audio.muted=!Audio.muted;sndBtn.textContent=Audio.muted?'SOUND OFF':'SOUND ON';if(!Audio.muted&&G.shaker&&!G.paused)Audio.loopStart();}
+function toggleMute(){Audio.muted=!Audio.muted;sndBtn.textContent=Audio.muted?'MUTED':'SOUND';if(!Audio.muted&&G.shaker&&!G.paused)Audio.loopStart();}
 addEventListener('keydown',e=>{
   if(UI.isOpen){if(e.code==='Escape')UI.close();return;}
   Audio.init();
@@ -584,6 +596,7 @@ sndBtn.addEventListener('click',()=>{Audio.init();toggleMute();});
 cv.addEventListener('pointerdown',()=>{Audio.init();if(canStart())startReq=true;else if(G.paused)togglePause();});
 document.getElementById('bAccount').addEventListener('click',()=>UI.open(!Online.available?'offline':Online.ready?'account':Online.user?'nick':'auth'));
 document.getElementById('bBoard').addEventListener('click',()=>UI.open('board'));
+document.getElementById('bRules').addEventListener('click',()=>UI.open('rules'));
 ['touchend','click'].forEach(ev=>addEventListener(ev,()=>Audio.init(),{passive:true}));
 document.addEventListener('touchmove',e=>{if(e.target.closest('button,canvas'))e.preventDefault();},{passive:false});
 
@@ -716,6 +729,33 @@ const UI=(()=>{
         if(view!=='board')return;const mine=Online.me&&Online.me.nickname;
         $('bWrap').innerHTML=rows&&rows.length?`<table class="board"><thead><tr><th>#</th><th>NAME</th><th class="n">REPS</th><th class="n">SET</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.nickname===mine?'me':''}"><td>${r.rank}</td><td>${esc(r.nickname)}</td><td class="n">${r.score}</td><td class="n">${r.set_reached}</td></tr>`).join('')}</tbody></table>`:`<p class="fine">No scores yet${per==='month'?' this month':''}. Be the first!</p>`;
       }).catch(()=>{if(view==='board')$('bWrap').innerHTML='<p class="fine">Could not load the leaderboard. Check your connection.</p>';});
+    }else if(view==='rules'){
+      title.textContent='HOW TO PLAY';
+      const img=s=>`<img alt="" src="${s.c.toDataURL()}" style="height:${s.h*2.25}px">`;
+      const ctl=TOUCH?['◀ ▶ buttons','LIFT button','REST button']:['← → or A D','SPACE','P'];
+      body.innerHTML=`<div class="rules">
+        <h3>THE GOAL</h3>
+        <p>Gym equipment is invading. Lift it out of the sky before it reaches your lifter. Clear the whole formation to finish a set.</p>
+        <h3>CONTROLS</h3>
+        <ul><li><span class="k">MOVE:</span> ${ctl[0]}</li><li><span class="k">LIFT (FIRE):</span> ${ctl[1]}</li><li><span class="k">REST (PAUSE):</span> ${ctl[2]}</li>${TOUCH?'':'<li><span class="k">SOUND:</span> M</li>'}</ul>
+        <h3>REP VALUES</h3>
+        <table class="rv"><tbody>
+          <tr><td>${img(SPR.shaker[0])}</td><td>Golden shaker</td><td class="n">50-300</td></tr>
+          ${TYPES.map(t=>`<tr><td>${img(SPR[t.k][0])}</td><td>${t.name.charAt(0)+t.name.slice(1).toLowerCase()}</td><td class="n">${t.pts}</td></tr>`).join('')}
+        </tbody></table>
+        <p class="fine" style="text-align:left">The golden shaker flies across the top now and then. Its mystery value depends on how many shots you've taken.</p>
+        <h3>ENERGY (LIVES)</h3>
+        <ul><li>You start with <span class="k">3 energy</span>.</li><li>Earn <span class="k">1 bonus energy at ${CFG.extraLifeAt.toLocaleString()} reps</span> (once per game).</li><li>Each hit costs 1 energy.</li><li>If the equipment reaches your lifter, it's workout over.</li></ul>
+        <h3>SQUAT RACKS</h3>
+        <p>Hide behind the 4 racks. Every hit chips a piece off, including your own shots, so they wear down over the game.</p>
+        <h3>SETS</h3>
+        <p>Every set starts lower and attacks faster: Beginner, Warming Up, Getting Stronger, Heavy Lifting, then BEAST MODE.</p>
+        <h3>WIN $100</h3>
+        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Show your code at the No Limits front desk.</li></ul>
+        <h3>TOP 10</h3>
+        <p>Sign in and every finished game is saved. Chase the all-time and monthly Top 10 boards.</p>
+      </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>`;
+      $('bOk').onclick=close;
     }else{
       title.textContent='OFFLINE';body.innerHTML='<p>The leaderboard and sign-in need an internet connection. You can still play, and your personal best is saved on this device.</p><button class="go" id="bOk">OK</button>';$('bOk').onclick=close;
     }

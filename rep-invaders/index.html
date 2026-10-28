@@ -179,7 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.28';
+const APP_VERSION='1.29';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -190,7 +190,7 @@ const CFG={
   rackY:188,groundY:236,
   lives:4,extraLifeEvery:1000,
   shaker:{y:28,speed:.8,interval:1400,minAliens:8},
-  tubChance:.35,spotterGap:15,
+  tubChance:.25,spotterGap:15,
   setNames:['BEGINNER','WARMING UP','GETTING STRONGER','HEAVY LIFTING','BEAST MODE'],
   cheers:['SET COMPLETE!','KEEP PUSHING!','NO LIMITS!','ONE MORE REP!','FEEL THE BURN!','BEAST MODE!','STAY STRONG!'],
   shakerPts:[100,50,50,100,150,100,100,50,300,100,100,100,50,150,100],
@@ -328,7 +328,7 @@ function startWave(){
   G.player={x:W/2-6,y:CFG.player.y,fireT:0};G.pbs=[];G.aBullets=[];G.shaker=null;G.shakerTimer=0;G.fireTimer=70;G.invaded=false;Audio.loopStop();
 }
 // Difficulty level: rises by 1 per set up to set 4, then only half a step per set (capped)
-function lvl(){const w=G.wave;return w<4?w:Math.min(3+(w-4)*.5,5);}
+function lvl(){const w=G.wave;return w<4?w:Math.min(3+(w-4)*.65,5.5);}
 function setLabel(i){return CFG.setNames[Math.min(i,CFG.setNames.length-1)];}
 function newGame(){
   Object.assign(G,{spotter:false,score:0,lives:CFG.lives,wave:0,nextLife:CFG.extraLifeEvery,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
@@ -371,7 +371,7 @@ function stepAliens(){
 }
 function alienFire(){
   if(--G.fireTimer>0)return;
-  const L=lvl();G.fireTimer=Math.max(17,53-L*5)+(Math.random()*33|0);
+  const L=lvl();G.fireTimer=Math.max(16,50-L*5)+(Math.random()*32|0);
   const n=aliveCount(),maxB=Math.min(3,1+((Math.floor(L)+1)>>1)+(n<22?1:0));
   if(G.aBullets.length>=maxB)return;
   const cols={};for(const a of G.aliens)if(a.alive&&(!cols[a.c]||a.y>cols[a.c].y))cols[a.c]=a;

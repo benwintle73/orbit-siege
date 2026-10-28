@@ -103,6 +103,11 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
 .rv td:first-child{width:34px}
 .rv img{display:block;image-rendering:pixelated;height:18px;width:auto;margin:auto}
 .rv .n{text-align:right;color:var(--gold);white-space:nowrap}
+.joinbtn{position:absolute;z-index:2;left:12%;right:12%;top:75%;display:flex;align-items:center;justify-content:center;min-height:9%;
+  border-radius:4px;background:var(--gold);color:#1a1205;font-family:var(--pixel);font-size:clamp(8px,2.4vw,13px);text-decoration:none;text-align:center;
+  box-shadow:0 0 0 3px #080808,0 0 0 5px var(--gold);letter-spacing:.04em}
+.joinbtn:focus-visible{outline:2px solid var(--white);outline-offset:4px}
+a.go{display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
 .voucher{margin:16px 0 6px;padding:14px 10px;border:2px dashed var(--gold);text-align:center}
 .voucher b{display:block;font-size:13px;letter-spacing:.08em;color:var(--white);font-weight:400;margin:10px 0;word-break:break-all;user-select:all;-webkit-user-select:all}
 .dir{
@@ -145,7 +150,7 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
   <button id="bSound" class="small" aria-label="Toggle sound">SOUND</button>
 </div>
-<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas></div></div>
+<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN NO LIMITS &amp; REDEEM</a></div></div>
 <div class="dirs">
   <button class="dir" data-k="left" aria-label="Move left">◀</button>
   <button class="dir" data-k="right" aria-label="Move right">▶</button>
@@ -550,6 +555,8 @@ function drawPrize(){
     if(P.emailed===true)text('CODE EMAILED TO YOU TOO',W/2,166,C.gold);
     else if(P.emailed===false)text('SCREENSHOT THIS CODE',W/2,166,C.gold);
     else text("WE'LL EMAIL IT TO YOU TOO",W/2,166,C.gold);
+    if(G.timer<=0&&blink())text(TOUCH?'OR TAP LIFT TO KEEP GOING':'OR PRESS FIRE TO KEEP GOING',W/2,178,C.white);
+    return;
   }else if(P.status==='claiming'){if(blink(10))text('CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
   else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
   else if(P.status==='desk'){text('ALL 10 VOUCHERS',W/2,124,C.white);text('HAVE BEEN WON. LEGEND!',W/2,138,C.greyLt);}
@@ -557,7 +564,9 @@ function drawPrize(){
   else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('PLEASE CONTACT NO LIMITS',W/2,138,C.greyLt);}
   if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,178,C.white);
 }
+const joinEl=document.getElementById('joinLink');
 function draw(){
+  const showJoin=G.state==='prize'&&G.prize&&G.prize.status==='code'&&!G.paused;if(joinEl.hidden===showJoin)joinEl.hidden=!showJoin;
   let sx=0,sy=0;if(G.shake>0&&!G.paused){sx=(Math.random()*3|0)-1;sy=(Math.random()*3|0)-1;}
   ctx.setTransform(S,0,0,S,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
   ctx.setTransform(S,0,0,S,sx*S,sy*S);ctx.imageSmoothingEnabled=false;ctx.textBaseline='top';
@@ -715,7 +724,7 @@ const UI=(()=>{
       const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
       body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
         <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
-        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Enter this code when you sign up to No Limits online. We've also emailed it to you.</div></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Enter this code when you sign up to No Limits online. We've also emailed it to you.</div><a class="go" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="margin-top:12px">JOIN NO LIMITS &amp; REDEEM</a></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
         <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
         <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
       $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};
@@ -753,7 +762,7 @@ const UI=(()=>{
         <h3>SETS</h3>
         <p>Every set starts lower and attacks faster: Beginner, Warming Up, Getting Stronger, Heavy Lifting, then BEAST MODE.</p>
         <h3>WIN $100</h3>
-        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Redeem your code online when you sign up to No Limits.</li></ul>
+        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Redeem your code online when you <a href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="color:var(--gold)">sign up to No Limits</a>.</li></ul>
         <h3>TOP 10</h3>
         <p>Sign in and every finished game is saved. Chase the all-time and monthly Top 10 boards.</p>
       </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>`;

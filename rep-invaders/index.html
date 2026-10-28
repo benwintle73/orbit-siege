@@ -546,7 +546,7 @@ function drawPrize(){
   if(P.status==='code'){
     ctx.fillStyle=C.gold;[[20,118,W-40,1],[20,136,W-40,1],[20,118,1,19],[W-21,118,1,19]].forEach(r=>ctx.fillRect(...r));
     text(P.code,W/2,124,C.white);
-    text('SHOW THIS AT THE',W/2,144,C.greyLt);text('NO LIMITS FRONT DESK',W/2,154,C.greyLt);
+    text('REDEEM IT ONLINE WHEN',W/2,144,C.greyLt);text('YOU JOIN NO LIMITS',W/2,154,C.greyLt);
     if(P.emailed===true)text('CODE EMAILED TO YOU TOO',W/2,166,C.gold);
     else if(P.emailed===false)text('SCREENSHOT THIS CODE',W/2,166,C.gold);
     else text("WE'LL EMAIL IT TO YOU TOO",W/2,166,C.gold);
@@ -554,7 +554,7 @@ function drawPrize(){
   else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
   else if(P.status==='desk'){text('ALL 10 VOUCHERS',W/2,124,C.white);text('HAVE BEEN WON. LEGEND!',W/2,138,C.greyLt);}
   else if(P.status==='offline'){text('GO ONLINE AND SIGN IN',W/2,124,C.white);text('TO CLAIM YOUR VOUCHER',W/2,138,C.greyLt);}
-  else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
+  else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('PLEASE CONTACT NO LIMITS',W/2,138,C.greyLt);}
   if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,178,C.white);
 }
 function draw(){
@@ -715,7 +715,7 @@ const UI=(()=>{
       const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
       body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
         <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
-        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Show this code at the No Limits front desk. We've also emailed it to you.</div></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Enter this code when you sign up to No Limits online. We've also emailed it to you.</div></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
         <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
         <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
       $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};
@@ -753,7 +753,7 @@ const UI=(()=>{
         <h3>SETS</h3>
         <p>Every set starts lower and attacks faster: Beginner, Warming Up, Getting Stronger, Heavy Lifting, then BEAST MODE.</p>
         <h3>WIN $100</h3>
-        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Show your code at the No Limits front desk.</li></ul>
+        <ul><li>Clear <span class="k">SET 10</span> to win a <span class="k">$100 No Limits gift voucher</span>.</li><li>Only 10 vouchers. One per person.</li><li>You must be signed in. Your code shows on screen and is emailed to you.</li><li>Redeem your code online when you sign up to No Limits.</li></ul>
         <h3>TOP 10</h3>
         <p>Sign in and every finished game is saved. Chase the all-time and monthly Top 10 boards.</p>
       </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>`;

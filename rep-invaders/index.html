@@ -362,13 +362,14 @@ function doClaim(){
   Online.claim(G.score,10).then(code=>{
     try{localStorage.removeItem(CLAIM_KEY)}catch(e){}
     G.prize=code?{status:'code',code}:{status:'desk'};Online.refresh();
+    if(code)Online.emailVoucher().then(sent=>{if(sent&&G.prize&&G.prize.code===code)G.prize.emailed=true;});
   }).catch(e=>{G.prize={status:'error',msg:short(e.message)};});
 }
 // Claim saved for later (player won before signing in, then closed the game)
 function claimSaved(){
   let c=null;try{c=JSON.parse(localStorage.getItem(CLAIM_KEY)||'null')}catch(e){}
   if(!c||!Online.ready||G.state==='prize')return;
-  Online.claim(c.score,c.sets).then(code=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){};Online.refresh().then(()=>{if(code)UI.open('account');});}).catch(()=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){}});
+  Online.claim(c.score,c.sets).then(code=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){};if(code)Online.emailVoucher();Online.refresh().then(()=>{if(code)UI.open('account');});}).catch(()=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){}});
 }
 function movePB(){
   const pb=G.pBullet;pb.y-=CFG.bullet.speed;
@@ -519,12 +520,13 @@ function drawPrize(){
     ctx.fillStyle=C.gold;[[20,118,W-40,1],[20,136,W-40,1],[20,118,1,19],[W-21,118,1,19]].forEach(r=>ctx.fillRect(...r));
     text(P.code,W/2,124,C.white);
     text('SHOW THIS AT THE',W/2,144,C.greyLt);text('NO LIMITS FRONT DESK',W/2,154,C.greyLt);
+    if(P.emailed)text('ALSO EMAILED TO YOU',W/2,166,C.gold);
   }else if(P.status==='claiming'){if(blink(10))text('CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
   else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
   else if(P.status==='desk'){text('ALL CODES CLAIMED.',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
   else if(P.status==='offline'){text('GO ONLINE AND SIGN IN',W/2,124,C.white);text('TO CLAIM YOUR VOUCHER',W/2,138,C.greyLt);}
   else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
-  if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,172,C.gold);
+  if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,178,C.white);
 }
 function draw(){
   let sx=0,sy=0;if(G.shake>0&&!G.paused){sx=(Math.random()*3|0)-1;sy=(Math.random()*3|0)-1;}
@@ -615,7 +617,8 @@ const Online=(()=>{
     async newPassword(pw){const {error}=await sb.auth.updateUser({password:pw});if(error)throw error;},
     submit:(score,set)=>rpc('submit_score',{p_score:score,p_set:set}),
     claim:(score,sets)=>rpc('claim_voucher',{p_score:score,p_sets_completed:sets}),
-    board:period=>rpc('get_leaderboard',{p_period:period})
+    board:period=>rpc('get_leaderboard',{p_period:period}),
+    async emailVoucher(){if(!sb)return false;try{const {data,error}=await sb.functions.invoke('email-voucher',{body:{}});return!error&&!!(data&&data.sent);}catch(e){return false;}}
   };
 })();
 
@@ -680,7 +683,7 @@ const UI=(()=>{
       const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
       body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
         <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
-        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Show this code at the No Limits front desk.</div></div>`:'<p class="fine">Clear SET 10 to win a $100 No Limits gift voucher.</p>'}
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Show this code at the No Limits front desk. We've also emailed it to you.</div></div>`:'<p class="fine">Clear SET 10 to win a $100 No Limits gift voucher.</p>'}
         <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
         <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
       $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};

@@ -1,5 +1,5 @@
 // Offline cache for Orbit Siege. Bump VERSION when files change.
-const VERSION = 'orbit-siege-v5';
+const VERSION = 'orbit-siege-v6';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -20,7 +20,7 @@ self.addEventListener('fetch', e => {
   // Page: network first so updates show up, cache as fallback for offline.
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: 'no-cache' }).then(res => {
         const copy = res.clone();
         caches.open(VERSION).then(c => c.put('./index.html', copy));
         return res;

@@ -143,6 +143,7 @@ function toggleMute(){muted=!muted;sndBtn.innerHTML='SOUND<br>'+(muted?'OFF':'ON
 const HI_KEY='orbit-siege-hi';
 let hi=0;try{hi=parseInt(localStorage.getItem(HI_KEY))||0}catch(e){}
 function saveHi(){try{localStorage.setItem(HI_KEY,String(hi))}catch(e){}}
+let pendingReload=false;
 let state='title',score=0,lives=3,wave=0,extraGiven=false,paused=false,frameN=0,stateTimer=0,titleFrame=0;
 let player,pBullet,aBullets,aliens,ptr,dx,dropPending,bunkers,ufo,ufoTimer,shots=0,booms=[],fireTimer,beatIdx=0,lastBeat=0,invaded=false;
 const BUNK_Y=192;
@@ -204,7 +205,7 @@ function alienFire(){
 }
 function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
 function killPlayer(){buzz([80,40,160]);state='dying';stateTimer=110;aBullets=[];pBullet=null;ufo=null;stopUfo();sfx.die();}
-function gameOver(){state='over';stateTimer=90;saveHi();stopUfo();}
+function gameOver(){if(pendingReload){saveHi();location.reload();return;}state='over';stateTimer=90;saveHi();stopUfo();}
 
 function movePB(){
   const pb=pBullet;pb.y-=4;
@@ -347,7 +348,20 @@ const STEP=1000/60;let acc=0,last=performance.now();
 function frame(t){acc+=Math.min(200,t-last);last=t;while(acc>=STEP){update();acc-=STEP;}draw();requestAnimationFrame(frame);}
 startWave();state='title';draw();requestAnimationFrame(frame);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
-if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname)){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname)){
+  const hadController=!!navigator.serviceWorker.controller;
+  let reloading=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(!hadController||reloading)return;
+    if(state==='play'||state==='dying'||state==='cleared'){pendingReload=true;return;}
+    reloading=true;location.reload();
+  });
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    const check=()=>{try{reg.update()}catch(e){}};
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)check();});
+    addEventListener('pageshow',check);
+  }).catch(()=>{});
+}
 })();
 </script>
 

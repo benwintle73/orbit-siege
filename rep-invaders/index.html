@@ -371,13 +371,44 @@ function gameOver(){
   saveResult({score:G.score,set:G.wave+1});
 }
 const short=m=>String(m||'').toUpperCase().replace(/[^A-Z0-9 .,!?:'$-]/g,'').slice(0,26);
+const isNetErr=e=>/load failed|failed to fetch|networkerror|network request|fetch|timed? ?out|offline/i.test(String(e&&e.message||e));
+const friendly=e=>{const m=String(e&&e.message||'');
+  if(isNetErr(e))return 'NO CONNECTION. WILL RETRY';
+  if(/too many/i.test(m))return 'SAVED (ONE PER 15 SECONDS)';
+  if(/not accepted|invalid/i.test(m))return 'SCORE NOT ACCEPTED';
+  if(/sign in|nickname/i.test(m))return 'SIGN IN TO SAVE SCORE';
+  return 'COULD NOT SAVE SCORE';};
+// Scores waiting to reach the server (kept on the device until they do)
+const Q_KEY='nl-ri-score-queue';
+const Queue={
+  get(){try{return JSON.parse(localStorage.getItem(Q_KEY)||'[]')}catch(e){return[]}},
+  set(q){try{localStorage.setItem(Q_KEY,JSON.stringify(q.slice(-10)))}catch(e){}},
+  add(r){const q=this.get();q.push({score:r.score,set:r.set,id:r.id});this.set(q);},
+  drop(id){this.set(this.get().filter(x=>x.id!==id));}
+};
+let flushing=false,retryTimer=null;
+async function flushQueue(){
+  if(flushing||!Online.ready)return;flushing=true;clearTimeout(retryTimer);
+  try{
+    for(const r of Queue.get()){
+      try{await Online.submit(r.score,r.set);Queue.drop(r.id);if(G.saveId===r.id)G.save='SAVED TO TOP 10 BOARD';}
+      catch(e){
+        if(isNetErr(e)){if(G.saveId===r.id)G.save='NO CONNECTION. WILL RETRY';retryTimer=setTimeout(flushQueue,8000);break;}
+        Queue.drop(r.id);if(G.saveId===r.id)G.save=friendly(e);
+      }
+    }
+    Online.refresh();
+  }finally{flushing=false;}
+}
+['online','pageshow'].forEach(ev=>addEventListener(ev,()=>flushQueue()));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue();});
 function saveResult(r){
   G.pendingResult=null;
   if(r.score<=0){G.save='';return;}
   if(!Online.available){G.save='OFFLINE: SAVED ON DEVICE';return;}
   if(!Online.ready){G.save='SIGN IN TO SAVE SCORE';G.pendingResult=r;return;}
-  G.save='SAVING SCORE...';
-  Online.submit(r.score,r.set).then(()=>{G.save='SAVED TO TOP 10 BOARD';Online.refresh();}).catch(e=>{G.save=short(e.message);});
+  const id=Date.now()+'-'+r.score;G.saveId=id;G.save='SAVING SCORE...';
+  Queue.add({score:r.score,set:r.set,id});flushQueue();
 }
 // Set 10 voucher
 const CLAIM_KEY='nl-ri-pending-claim';
@@ -390,17 +421,21 @@ function doClaim(){
     return;
   }
   G.prize={status:'claiming'};
+  try{localStorage.setItem(CLAIM_KEY,JSON.stringify({score:G.score,sets:10}))}catch(e){}
   Online.claim(G.score,10).then(code=>{
     try{localStorage.removeItem(CLAIM_KEY)}catch(e){}
     G.prize=code?{status:'code',code}:{status:'desk'};Online.refresh();Online.loadTally();
     if(code)Online.emailVoucher().then(sent=>{if(G.prize&&G.prize.code===code)G.prize.emailed=sent;});
-  }).catch(e=>{G.prize={status:'error',msg:short(e.message)};});
+  }).catch(e=>{
+    if(isNetErr(e)){G.prize={status:'claiming',retry:true};setTimeout(()=>{if(G.state==='prize'&&G.prize&&G.prize.retry)doClaim();},5000);return;}
+    try{localStorage.removeItem(CLAIM_KEY)}catch(_){}
+    G.prize={status:'error',msg:short(e.message)};});
 }
 // Claim saved for later (player won before signing in, then closed the game)
 function claimSaved(){
   let c=null;try{c=JSON.parse(localStorage.getItem(CLAIM_KEY)||'null')}catch(e){}
   if(!c||!Online.ready||G.state==='prize')return;
-  Online.claim(c.score,c.sets).then(code=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){};if(code)Online.emailVoucher();Online.refresh().then(()=>{if(code)UI.open('account');});}).catch(()=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){}});
+  Online.claim(c.score,c.sets).then(code=>{try{localStorage.removeItem(CLAIM_KEY)}catch(e){};if(code)Online.emailVoucher();Online.refresh().then(()=>{if(code)UI.open('account');});}).catch(e=>{if(!isNetErr(e)){try{localStorage.removeItem(CLAIM_KEY)}catch(_){}}});
 }
 function movePB(){
   const pb=G.pBullet;pb.y-=CFG.bullet.speed;
@@ -564,7 +599,7 @@ function drawPrize(){
     else text("WE'LL EMAIL IT TO YOU TOO",W/2,166,C.gold);
     if(G.timer<=0&&blink())text(TOUCH?'OR TAP LIFT TO KEEP GOING':'OR PRESS FIRE TO KEEP GOING',W/2,178,C.white);
     return;
-  }else if(P.status==='claiming'){if(blink(10))text('CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
+  }else if(P.status==='claiming'){if(blink(10))text(P.retry?'NO CONNECTION. RETRYING':'CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
   else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
   else if(P.status==='desk'){text('ALL 10 VOUCHERS',W/2,124,C.white);text('HAVE BEEN WON. LEGEND!',W/2,138,C.greyLt);}
   else if(P.status==='offline'){text('GO ONLINE AND SIGN IN',W/2,124,C.white);text('TO CLAIM YOUR VOUCHER',W/2,138,C.greyLt);}
@@ -628,11 +663,12 @@ function shareData(){
   const nick=Online.ready?Online.me.nickname:'';
   const url=GAME_URL+'?challenge='+G.score+(nick?'&from='+encodeURIComponent(nick):'');
   const text='I scored '+G.score.toLocaleString()+' reps and reached SET '+(G.wave+1)+' on NO LIMITS 24/7 REP INVADERS. Think you can beat me? Clear set 10 to win a $100 No Limits gift voucher!';
-  return{title:'No Limits 24/7: Rep Invaders',text,url};
+  return{title:'No Limits 24/7: Rep Invaders',text,url,full:text+'\n\n'+url};
 }
 async function doShare(){
   Audio.init();const d=shareData();
-  if(navigator.share){try{await navigator.share(d);return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  // One text block (message + link): iPhone apps like Messages drop the text if the link is sent separately
+  if(navigator.share){try{await navigator.share({text:d.full});return;}catch(e){if(e&&e.name==='AbortError')return;}}
   UI.open('share',d);
 }
 document.getElementById('shareBtn').addEventListener('click',doShare);
@@ -818,6 +854,7 @@ const accBtn=document.getElementById('bAccount');
 Online.on(()=>{
   accBtn.textContent=Online.ready?Online.me.nickname:'SIGN IN TO WIN';UI.refresh();
   if(!Online.ready)return;
+  flushQueue();
   if(G.state==='over'&&G.pendingResult)saveResult(G.pendingResult);
   if(G.state==='prize'&&G.prize&&G.prize.status==='signin')doClaim();
   else claimSaved();

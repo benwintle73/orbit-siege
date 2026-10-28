@@ -34,6 +34,8 @@
   color-scheme:dark;
 }
 [hidden]{display:none!important}
+/* iPhone home-screen apps can report a viewport shorter than the screen; JS sets --app-h to the real height */
+.fullh body,.fullh .modal{bottom:auto;height:var(--app-h)}
 html{height:100%;overscroll-behavior:none;background:var(--bg)}
 body{
   position:fixed;inset:0;height:auto;overscroll-behavior:none;
@@ -179,7 +181,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.17';
+const APP_VERSION='1.18';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -885,6 +887,17 @@ Online.on(()=>{
   else claimSaved();
 });
 Online.init();
+
+/* ================= HOME-SCREEN APP HEIGHT FIX (iPhone) ================= */
+function fixAppHeight(){
+  const root=document.documentElement;
+  const standalone=navigator.standalone||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches;
+  const land=innerWidth>innerHeight,full=land?Math.min(screen.width,screen.height):Math.max(screen.width,screen.height);
+  const short=full-innerHeight;
+  if(standalone&&innerWidth<=Math.max(screen.width,screen.height)&&short>0&&short<=80){root.style.setProperty('--app-h',full+'px');root.classList.add('fullh');}
+  else{root.classList.remove('fullh');root.style.removeProperty('--app-h');}
+}
+fixAppHeight();addEventListener('resize',fixAppHeight);addEventListener('orientationchange',()=>setTimeout(fixAppHeight,250));
 
 /* ================= SCALING + LOOP ================= */
 const stage=document.getElementById('stage'),crt=document.getElementById('crt');

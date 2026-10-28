@@ -179,7 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.16';
+const APP_VERSION='1.17';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -862,7 +862,11 @@ const UI=(()=>{
         <h3>TOP 10</h3>
         <p>Sign in and every finished game is saved. Chase the all-time and monthly Top 10 boards.</p>
       </div><button class="go" id="bOk" style="margin-top:18px">LET'S LIFT</button>
-      <p class="fine">Version ${APP_VERSION}</p>`;
+      <p class="fine">Version ${APP_VERSION}</p><p class="fine" id="diag" style="margin-top:4px"></p>`;
+      try{const pr=document.createElement('div');pr.style.cssText='position:fixed;top:env(safe-area-inset-top,0px);bottom:env(safe-area-inset-bottom,0px);left:0;width:1px;visibility:hidden;pointer-events:none';document.body.appendChild(pr);
+        const r=pr.getBoundingClientRect(),bb=document.body.getBoundingClientRect(),c=document.getElementById('crt').getBoundingClientRect(),l=document.querySelector('.lift').getBoundingClientRect();pr.remove();
+        const sa=(navigator.standalone||matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches)?'APP':'WEB';
+        $('diag').textContent=`${sa} ${innerWidth}x${innerHeight} scr ${screen.width}x${screen.height} vv ${Math.round(visualViewport?visualViewport.height:0)} body ${Math.round(bb.height)} T${Math.round(r.top)} B${Math.round(innerHeight-r.bottom)} lift ${Math.round(l.bottom)}`;}catch(e){}
       $('bOk').onclick=close;
     }else{
       title.textContent='OFFLINE';body.innerHTML='<p>The leaderboard and sign-in need an internet connection. You can still play, and your personal best is saved on this device.</p><button class="go" id="bOk">OK</button>';$('bOk').onclick=close;

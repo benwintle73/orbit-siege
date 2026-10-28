@@ -260,6 +260,8 @@ function update(){
 
 /* ---------- drawing ---------- */
 const FG='#e8f0e6';
+const TOUCH=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+const PROMPT=TOUCH?'PRESS FIRE TO PLAY':'PRESS ENTER TO PLAY';
 const pad4=n=>String(n).padStart(4,'0');
 function spr(s,x,y){ctx.drawImage(s.c,Math.round(x),Math.round(y));}
 function text(t,x,y,align='center',size=8){ctx.font=size+"px 'Press Start 2P', monospace";ctx.textAlign=align;ctx.fillText(t,x,y);}
@@ -269,7 +271,7 @@ function drawTitle(){
   text('*SCORE ADVANCE TABLE*',W/2,116);
   const rows=[[SPR.ufo,'= ? MYSTERY'],[SPR.a[titleFrame],'= 30 POINTS'],[SPR.b[titleFrame],'= 20 POINTS'],[SPR.c[titleFrame],'= 10 POINTS']];
   rows.forEach(([s,t],i)=>{const y=136+i*16;spr(s,62-s.w/2,y);text(t,80,y,'left');});
-  if(Math.floor(frameN/30)%2===0)text('PRESS ENTER OR FIRE',W/2,210);
+  if(Math.floor(frameN/30)%2===0)text(PROMPT,W/2,210);
 }
 function drawGame(){
   for(const b of bunkers)for(let y=0;y<16;y++)for(let x=0;x<22;x++)if(b.d[y*22+x])ctx.fillRect(b.x+x,b.y+y,1,1);
@@ -292,10 +294,6 @@ function drawGame(){
   for(let i=0;i<Math.min(lives-1,5);i++)spr(SPR.player,24+i*16,244);
   text('WAVE '+(wave+1),W-8,244,'right');
   if(state==='cleared')text('WAVE '+(wave+2),W/2,120);
-  if(state==='over'){
-    text('GAME OVER',W/2,104,'center',16);
-    if(stateTimer<=0&&Math.floor(frameN/30)%2===0)text('PRESS ENTER OR FIRE',W/2,140);
-  }
 }
 function draw(){
   ctx.setTransform(S,0,0,S,0,0);ctx.globalCompositeOperation='source-over';ctx.clearRect(0,0,W,H);
@@ -308,6 +306,12 @@ function draw(){
   ctx.fillStyle='#ff4a4a';ctx.fillRect(0,32,W,22);
   ctx.fillStyle='#3dff6e';ctx.fillRect(0,184,W,H-184);
   ctx.globalCompositeOperation='source-over';
+  if(state==='over'){
+    ctx.fillStyle='rgba(5,6,8,.9)';ctx.fillRect(12,90,W-24,70);
+    ctx.fillStyle=FG;ctx.fillRect(12,90,W-24,1);ctx.fillRect(12,159,W-24,1);
+    text('GAME OVER',W/2,102,'center',16);
+    if(stateTimer<=0&&Math.floor(frameN/30)%2===0)text(PROMPT,W/2,136);
+  }
   if(paused){ctx.fillStyle='rgba(5,6,8,.7)';ctx.fillRect(0,96,W,40);ctx.fillStyle=FG;text('PAUSED',W/2,104);text('P TO RESUME',W/2,120);}
 }
 

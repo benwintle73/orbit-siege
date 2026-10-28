@@ -1,5 +1,5 @@
 // Offline cache for Orbit Siege. Bump VERSION when files change.
-const VERSION = 'orbit-siege-v4';
+const VERSION = 'orbit-siege-v5';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

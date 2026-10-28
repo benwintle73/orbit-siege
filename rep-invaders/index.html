@@ -179,14 +179,14 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.24';
+const APP_VERSION='1.25';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
           grey:'#737373',greyLt:'#AAAAA2',greyDk:'#3A3A3D',skin:'#D9A066',hair:'#3B2A1C',singlet:'#2A2A2E'},
-  player:{y:213,speed:1.3,minX:6,w:13,h:11},
-  bullet:{speed:4},
-  alien:{cols:11,startX:26,startY:56,spacingX:16,spacingY:16,step:2,drop:8,maxLower:6},
+  player:{y:213,speed:1.6,minX:6,w:13,h:11},
+  bullet:{speed:5},
+  alien:{cols:11,startX:26,startY:56,spacingX:16,spacingY:16,step:2,drop:8,maxLower:3},
   rackY:188,groundY:236,
   lives:4,extraLifeEvery:1000,
   shaker:{y:28,speed:.8,interval:1400,minAliens:8},
@@ -356,16 +356,16 @@ function stepAliens(){
 }
 function alienFire(){
   if(--G.fireTimer>0)return;
-  G.fireTimer=Math.max(12,46-G.wave*5)+(Math.random()*30|0);
-  const n=aliveCount(),maxB=Math.min(4,1+G.wave+(n<22?1:0));
+  G.fireTimer=Math.max(22,60-G.wave*4)+(Math.random()*36|0);
+  const n=aliveCount(),maxB=Math.min(3,1+(G.wave>>1)+(n<22?1:0));
   if(G.aBullets.length>=maxB)return;
   const cols={};for(const a of G.aliens)if(a.alive&&(!cols[a.c]||a.y>cols[a.c].y))cols[a.c]=a;
   const list=Object.values(cols);if(!list.length)return;
   let pick;
-  if(Math.random()<.4+Math.min(G.wave,4)*.05){const pc=G.player.x+6;pick=list.reduce((m,a)=>{const b=alienBox(a),d=Math.abs(b.x+b.w/2-pc);return d<m.d?{a,d}:m},{a:null,d:1e9}).a;}
+  if(Math.random()<.3+Math.min(G.wave,4)*.04){const pc=G.player.x+6;pick=list.reduce((m,a)=>{const b=alienBox(a),d=Math.abs(b.x+b.w/2-pc);return d<m.d?{a,d}:m},{a:null,d:1e9}).a;}
   else pick=list[Math.random()*list.length|0];
   const b=alienBox(pick);
-  G.aBullets.push({x:(b.x+b.w/2)|0,y:b.y+b.h,kind:Math.random()*2|0,f:0,v:1.2+Math.min(G.wave,6)*.15+(n<10?.4:0)});
+  G.aBullets.push({x:(b.x+b.w/2)|0,y:b.y+b.h,kind:Math.random()*2|0,f:0,v:1.0+Math.min(G.wave,6)*.1+(n<10?.3:0)});
 }
 function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
 function killPlayer(){buzz([80,40,160]);G.state='dying';G.timer=110;G.aBullets=[];G.pBullet=null;G.shaker=null;Audio.loopStop();Audio.fx.hit();if(!REDUCED)G.shake=14;}
@@ -519,7 +519,7 @@ function update(){
     showBanner([cheer,'NEXT SET: '+(G.wave+2),setLabel(G.wave+1)],140,'cleared');return;
   }
   const n=aliveCount();
-  const steps=n<=4?1:1+(G.wave>=3?1:(G.wave>=1&&G.frame%2===0?1:0));
+  const steps=n<=4?1:1+(G.wave>=5?1:(G.wave>=2&&G.frame%2===0?1:0));
   for(let i=0;i<steps;i++)stepAliens();
   if(G.invaded){G.invaded=false;G.lives=1;killPlayer();return;}
   alienFire();moveAB();

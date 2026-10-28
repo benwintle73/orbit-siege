@@ -53,7 +53,7 @@ button{font-family:var(--pixel);touch-action:none;-webkit-tap-highlight-color:tr
 button:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 .small{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--edge);background:#121214;color:var(--gold);font-size:9px;letter-spacing:.06em}
 .small.on{background:#1f1f22}
-.small.acct{border-color:var(--gold-dk);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.small.acct{border-color:var(--gold);color:#1a1205;background:var(--gold);max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .modal{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;
   padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .sheet{position:relative;width:100%;max-width:380px;max-height:100%;overflow:auto;box-sizing:border-box;background:#0f0f10;border:2px solid var(--gold);border-radius:6px;
@@ -103,6 +103,7 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
 .dir.on,.lift.on{transform:translateY(4px);box-shadow:0 0 0 5px #141416,0 0 0 7px #3a3a3d,0 0 0 8px #050505,0 3px 0 7px #050505,inset 0 -3px 8px rgba(0,0,0,.5),inset 0 6px 10px rgba(0,0,0,.35)}
 
 @media (pointer:coarse){
+  .small{padding:0 9px;font-size:8px}
   body{grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "stage stage" "dirs lift";gap:10px}
   .legend{display:none}
   .top{grid-area:top;display:flex;justify-content:flex-end;gap:8px}
@@ -118,7 +119,7 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
 </style>
 
 <div class="top">
-  <button id="bAccount" class="small acct" aria-label="Sign in or view your account">SIGN IN</button>
+  <button id="bAccount" class="small acct" aria-label="Sign in or view your account">SIGN IN TO WIN</button>
   <button id="bBoard" class="small" aria-label="Show the top 10 leaderboard">TOP 10</button>
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
   <button id="bSound" class="small" aria-label="Toggle sound">SOUND ON</button>
@@ -361,7 +362,7 @@ function doClaim(){
   G.prize={status:'claiming'};
   Online.claim(G.score,10).then(code=>{
     try{localStorage.removeItem(CLAIM_KEY)}catch(e){}
-    G.prize=code?{status:'code',code}:{status:'desk'};Online.refresh();
+    G.prize=code?{status:'code',code}:{status:'desk'};Online.refresh();Online.loadTally();
     if(code)Online.emailVoucher().then(sent=>{if(sent&&G.prize&&G.prize.code===code)G.prize.emailed=true;});
   }).catch(e=>{G.prize={status:'error',msg:short(e.message)};});
 }
@@ -455,17 +456,22 @@ function drawHeader(){
   if(Audio.muted)text('MUTE',84,18,C.grey,'center');
 }
 function drawTitle(){
-  text('NO LIMITS',W/2,36,C.gold);
-  text('REP INVADERS',W/2,50,C.white,'center',16);
-  text('DEFEND YOUR GAINS',W/2,72,C.red);
-  // marching formation
-  const order=['kb','db','plate','bar','heavy'],off=Math.round(Math.sin(G.frame/40)*10);
-  order.forEach((k,i)=>{const s=SPR[k][G.titleFrame];spr(s,W/2-48+i*24+off+((12-s.w)>>1),92+((8-s.h)>>1));});
-  text('REP VALUE TABLE',W/2,114,C.gold);
+  text('NO LIMITS 24/7',W/2,32,C.gold);
+  text('REP INVADERS',W/2,44,C.white,'center',16);
+  text('DEFEND YOUR GAINS',W/2,64,C.red);
+  // prize box
+  panel(8,78,W-16,44,C.gold);
+  text('CLEAR SET 10: WIN $100!',W/2,84,C.gold);
+  text('ONLY 10 VOUCHERS. 1 EACH.',W/2,96,C.white);
+  const T=Online.tally;
+  if(T){const left=Math.max(0,T.max-T.won);
+    text(left?T.won+' OF '+T.max+' WON SO FAR':'ALL '+T.max+' VOUCHERS WON',W/2,108,left?C.red:C.greyLt);}
+  else text(Online.available?'SIGN IN TO WIN':'GO ONLINE TO WIN',W/2,108,C.greyLt);
+  text('REP VALUE TABLE',W/2,130,C.gold);
   const rows=[[SPR.shaker[G.titleFrame],'GOLD SHAKER','???'],...TYPES.map(t=>[SPR[t.k][G.titleFrame],t.name,String(t.pts)])];
-  rows.forEach(([s,name,pts],i)=>{const y=128+i*14;spr(s,46-s.w/2,y+4-s.h/2);text(name,64,y,C.white,'left');text(pts,184,y,i===0?C.gold:C.white,'right');});
-  if(blink())text(TXT.start,W/2,214,C.gold);
-  text('NO LIMITS. NO EXCUSES.',W/2,240,C.grey);
+  rows.forEach(([s,name,pts],i)=>{const y=143+i*12;spr(s,46-s.w/2,y+4-s.h/2);text(name,64,y,C.white,'left');text(pts,184,y,i===0?C.gold:C.white,'right');});
+  if(blink())text(TXT.start,W/2,218,C.gold);
+  text('NO LIMITS. NO EXCUSES.',W/2,238,C.grey);
 }
 function drawRacks(){
   for(let ci=1;ci<RACK_COL.length;ci++){ctx.fillStyle=RACK_COL[ci];
@@ -523,7 +529,7 @@ function drawPrize(){
     if(P.emailed)text('ALSO EMAILED TO YOU',W/2,166,C.gold);
   }else if(P.status==='claiming'){if(blink(10))text('CLAIMING YOUR CODE...',W/2,128,C.greyLt);}
   else if(P.status==='signin'){text('SIGN IN TO CLAIM IT',W/2,124,C.white);text('USE THE SIGN IN BUTTON',W/2,138,C.greyLt);}
-  else if(P.status==='desk'){text('ALL CODES CLAIMED.',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
+  else if(P.status==='desk'){text('ALL 10 VOUCHERS',W/2,124,C.white);text('HAVE BEEN WON. LEGEND!',W/2,138,C.greyLt);}
   else if(P.status==='offline'){text('GO ONLINE AND SIGN IN',W/2,124,C.white);text('TO CLAIM YOUR VOUCHER',W/2,138,C.greyLt);}
   else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('SEE THE FRONT DESK',W/2,138,C.greyLt);}
   if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,178,C.white);
@@ -575,15 +581,17 @@ document.addEventListener('touchmove',e=>{if(e.target.closest('button,canvas'))e
 /* ================= ONLINE: sign-in + leaderboard (Supabase) ================= */
 const SB_URL='https://nkkhbtrrytctpfwjenrz.supabase.co',SB_KEY='sb_publishable_1bZLkfdxFTM4w3SWqPklDw_l3leLxxl';
 const Online=(()=>{
-  let sb=null;const st={user:null,me:null,fns:[]};
+  let sb=null;const st={user:null,me:null,fns:[],tally:null};
   try{if(window.supabase&&window.supabase.createClient)sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:'nl-rep-invaders-auth'}});}catch(e){sb=null;}
   const emit=()=>st.fns.forEach(f=>{try{f()}catch(e){}});
   const NICK_KEY='nl-ri-pending-nick';
   async function rpc(name,args){if(!sb)throw new Error('Leaderboard is offline');const {data,error}=await sb.rpc(name,args||{});if(error)throw new Error(error.message);return data;}
   async function refresh(){if(!sb||!st.user){st.me=null;emit();return;}try{const d=await rpc('get_me');st.me=(d&&d[0])||null;}catch(e){st.me=null;}emit();}
   async function adoptPendingNick(){if(st.me&&st.me.nickname)return;let n=null;try{n=localStorage.getItem(NICK_KEY)}catch(e){}if(!n)return;try{await rpc('set_nickname',{p_nickname:n});localStorage.removeItem(NICK_KEY);}catch(e){}await refresh();}
+  async function loadTally(){if(!sb)return;try{const {data,error}=await sb.rpc('voucher_stats');if(!error&&data&&data[0])st.tally={won:data[0].won,max:data[0].max_prizes};}catch(e){}}
   async function init(){
     if(!sb)return;
+    loadTally();document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadTally();});
     try{const {data}=await sb.auth.getSession();st.user=data.session?data.session.user:null;}catch(e){}
     await refresh();await adoptPendingNick();
     sb.auth.onAuthStateChange((ev,session)=>{
@@ -599,7 +607,7 @@ const Online=(()=>{
     if(/not confirmed/i.test(m))return 'Check your email and tap the confirm link first.';
     return m;};
   return{
-    get available(){return!!sb},get user(){return st.user},get me(){return st.me},
+    get available(){return!!sb},get user(){return st.user},get me(){return st.me},get tally(){return st.tally},loadTally,
     get ready(){return!!(st.user&&st.me&&st.me.nickname)},
     on(f){st.fns.push(f)},init,refresh,authErr,
     async signUp(email,password,nickname){
@@ -651,7 +659,7 @@ const UI=(()=>{
           <p class="msg" id="mMsg" role="status"></p>
         </form>
         ${tab==='signin'?'<button class="link" id="lForgot" type="button">Forgot password?</button>':''}
-        <p class="fine">Only your nickname appears on the leaderboard. Your email stays private and is never shown.</p>`;
+        <p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.<br>Only your nickname appears on the leaderboard. Your email stays private.</p>`;
       $('tSign').onclick=()=>{opts.tab='signin';render();};$('tJoin').onclick=()=>{opts.tab='join';render();};
       if($('lForgot'))$('lForgot').onclick=async()=>{const em=$('fEmail').value.trim();if(!em){say('Type your email above first');return;}
         try{await Online.resetPassword(em);say('Check your email for a reset link',true);}catch(e){say(Online.authErr(e));}};
@@ -683,7 +691,7 @@ const UI=(()=>{
       const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
       body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
         <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
-        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Show this code at the No Limits front desk. We've also emailed it to you.</div></div>`:'<p class="fine">Clear SET 10 to win a $100 No Limits gift voucher.</p>'}
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Show this code at the No Limits front desk. We've also emailed it to you.</div></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
         <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
         <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
       $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};
@@ -709,7 +717,7 @@ const UI=(()=>{
 })();
 const accBtn=document.getElementById('bAccount');
 Online.on(()=>{
-  accBtn.textContent=Online.ready?Online.me.nickname:'SIGN IN';UI.refresh();
+  accBtn.textContent=Online.ready?Online.me.nickname:'SIGN IN TO WIN';UI.refresh();
   if(!Online.ready)return;
   if(G.state==='over'&&G.pendingResult)saveResult(G.pendingResult);
   if(G.state==='prize'&&G.prize&&G.prize.status==='signin')doClaim();

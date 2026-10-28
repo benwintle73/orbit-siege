@@ -48,7 +48,7 @@ body{
 }
 .legend{font-size:9px;line-height:1.7;color:var(--dim);letter-spacing:.08em;display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:center;text-align:center}
 .legend b{color:var(--phos);font-weight:400}
-.pad{display:none;width:100%;max-width:440px;gap:10px}
+.pad{display:none;width:100%;max-width:440px;gap:14px;align-items:center;padding-block:6px 10px}
 @media (pointer:coarse){.legend{display:none}.pad{display:flex}}
 .pad button{
   flex:1;height:64px;border-radius:12px;border:1px solid var(--edge);background:var(--bezel);
@@ -57,6 +57,21 @@ body{
 .pad button.fire{flex:1.7;color:var(--green);border-color:#1d5a32}
 .pad button.snd{flex:.8;font-size:8px;color:var(--dim)}
 .pad button.on{background:#1b2030}
+.pad button.dir{
+  flex:0 0 auto;width:78px;height:78px;border-radius:50%;border:none;font-size:18px;
+  color:rgba(255,240,236,.9);text-shadow:0 1px 0 rgba(0,0,0,.45);
+  background:radial-gradient(circle at 36% 30%,#ff9a8c 0%,#f2372c 38%,#b5160f 72%,#6e0905 100%);
+  box-shadow:0 0 0 5px #15171f,0 0 0 7px #3b4053,0 0 0 8px #0b0c10,0 7px 0 7px #090a0e,
+    inset 0 -7px 12px rgba(0,0,0,.45),inset 0 5px 7px rgba(255,255,255,.35);
+  transition:transform .05s,box-shadow .05s;
+}
+.pad button.dir.on{
+  background:radial-gradient(circle at 36% 30%,#ff8576 0%,#d92a20 40%,#9c120c 74%,#5c0703 100%);
+  transform:translateY(4px);
+  box-shadow:0 0 0 5px #15171f,0 0 0 7px #3b4053,0 0 0 8px #0b0c10,0 3px 0 7px #090a0e,
+    inset 0 -3px 8px rgba(0,0,0,.5),inset 0 6px 10px rgba(0,0,0,.35);
+}
+.pad .gap{flex:0 0 2px}
 button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
 </style>
 
@@ -65,8 +80,8 @@ button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
   <span><b>← →</b> MOVE</span><span><b>SPACE</b> FIRE</span><span><b>ENTER</b> START</span><span><b>P</b> PAUSE</span><span><b>M</b> SOUND</span>
 </div>
 <div class="pad">
-  <button id="bl" data-k="left" aria-label="Move left">◀</button>
-  <button id="br" data-k="right" aria-label="Move right">▶</button>
+  <button id="bl" data-k="left" class="dir" aria-label="Move left">◀</button>
+  <button id="br" data-k="right" class="dir" aria-label="Move right">▶</button>
   <button id="bf" data-k="fire" class="fire">FIRE</button>
   <button id="bs" class="snd">SOUND<br>ON</button>
 </div>

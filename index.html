@@ -8,6 +8,8 @@
 <meta name="theme-color" content="#06070b">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orbit Siege">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -27,7 +29,8 @@ html,body{height:100%;overscroll-behavior:none}
 body{
   margin:0;background:var(--void);color:var(--phos);font-family:var(--pixel);
   display:flex;flex-direction:column;align-items:center;gap:14px;box-sizing:border-box;
-  padding-block:14px;
+  padding-top:max(14px,env(safe-area-inset-top,0px));
+  padding-bottom:max(14px,env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
   overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-touch-callout:none;
@@ -100,6 +103,7 @@ const UFO_PTS=[100,50,50,100,150,100,100,50,300,100,100,100,50,150,100];
 /* ---------- audio ---------- */
 let ac=null,muted=false,noiseBuf=null,ufoNodes=null;
 function audioInit(){
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(e){}
   if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();const len=ac.sampleRate;noiseBuf=ac.createBuffer(1,len,ac.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;}catch(e){ac=null;}}
   if(ac&&ac.state==='suspended')ac.resume().catch(()=>{});
 }
@@ -315,6 +319,7 @@ document.querySelectorAll('.pad button[data-k]').forEach(btn=>{
   btn.addEventListener('pointerdown',on);btn.addEventListener('pointerup',off);btn.addEventListener('pointercancel',off);btn.addEventListener('lostpointercapture',off);
   btn.addEventListener('contextmenu',e=>e.preventDefault());
 });
+['touchend','click'].forEach(ev=>addEventListener(ev,audioInit,{passive:true}));
 sndBtn.addEventListener('click',()=>{audioInit();toggleMute();});
 cv.addEventListener('pointerdown',()=>{audioInit();if(canStart())startReq=true;else if(paused)togglePause();});
 

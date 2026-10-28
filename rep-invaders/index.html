@@ -107,6 +107,8 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
   border-radius:4px;background:var(--gold);color:#1a1205;font-family:var(--pixel);font-size:clamp(8px,2.4vw,13px);text-decoration:none;text-align:center;
   box-shadow:0 0 0 3px #080808,0 0 0 5px var(--gold);letter-spacing:.04em}
 .joinbtn{border:none;cursor:pointer}
+#saveBtn{top:72.5%;min-height:8%;background:var(--white)}
+.joinbtn.low{top:83%;min-height:8%}
 .joinbtn:focus-visible{outline:2px solid var(--white);outline-offset:4px}
 a.go{display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
 .sharemsg{width:100%;box-sizing:border-box;min-height:92px;resize:none;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:10px;border-radius:4px;border:1px solid var(--edge);background:#050505;color:var(--white);user-select:text;-webkit-user-select:text}
@@ -154,7 +156,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
   <button id="bSound" class="small" aria-label="Toggle sound">SOUND</button>
 </div>
-<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><button id="shareBtn" class="joinbtn" type="button" hidden>CHALLENGE A FRIEND</button><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN / RENEW ONLINE</a></div></div>
+<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><button id="saveBtn" class="joinbtn" type="button" hidden>SIGN IN TO SAVE SCORE</button><button id="shareBtn" class="joinbtn" type="button" hidden>CHALLENGE A FRIEND</button><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN / RENEW ONLINE</a></div></div>
 <div class="dirs">
   <button class="dir" data-k="left" aria-label="Move left">◀</button>
   <button class="dir" data-k="right" aria-label="Move right">▶</button>
@@ -299,7 +301,7 @@ const G={state:'title',score:0,lives:CFG.lives,wave:0,extraGiven:false,paused:fa
   player:null,pBullet:null,aBullets:[],aliens:[],ptr:0,dx:CFG.alien.step,dropPending:false,racks:[],
   shaker:null,shakerTimer:0,shots:0,booms:[],fireTimer:0,beatIdx:0,lastBeat:0,invaded:false,
   banner:null,shake:0,newPB:false,pendingReload:false,titleFrame:0,
-  prizeShown:false,prize:null,save:'',pendingResult:null};
+  prizeShown:false,prize:null,save:''};
 const keys={left:false,right:false,fire:false};
 let startReq=false;
 
@@ -312,7 +314,7 @@ function startWave(){
 }
 function setLabel(i){return CFG.setNames[Math.min(i,CFG.setNames.length-1)];}
 function newGame(){
-  Object.assign(G,{score:0,lives:CFG.lives,wave:0,extraGiven:false,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:'',pendingResult:null});
+  Object.assign(G,{score:0,lives:CFG.lives,wave:0,extraGiven:false,shots:0,booms:[],paused:false,newPB:false,prizeShown:false,prize:null,save:''});
   makeRacks();startWave();showBanner(["LET'S GO!",'SET 1',setLabel(0)],100,'intro');
 }
 function showBanner(lines,frames,state){G.banner=lines;G.timer=frames;G.state=state;}
@@ -389,25 +391,40 @@ const Queue={
 let flushing=false,retryTimer=null;
 async function flushQueue(){
   if(flushing||!Online.ready)return;flushing=true;clearTimeout(retryTimer);
+  let saved=0;
   try{
     for(const r of Queue.get()){
-      try{await Online.submit(r.score,r.set);Queue.drop(r.id);if(G.saveId===r.id)G.save='SAVED TO TOP 10 BOARD';}
+      try{await Online.submit(r.score,r.set);Queue.drop(r.id);saved++;if(G.saveId===r.id)G.save='SAVED TO TOP 10 BOARD';}
       catch(e){
         if(isNetErr(e)){if(G.saveId===r.id)G.save='NO CONNECTION. WILL RETRY';retryTimer=setTimeout(flushQueue,8000);break;}
         Queue.drop(r.id);if(G.saveId===r.id)G.save=friendly(e);
       }
     }
-    Online.refresh();
+    if(saved)Online.refresh();
   }finally{flushing=false;}
 }
 ['online','pageshow'].forEach(ev=>addEventListener(ev,()=>flushQueue()));
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)flushQueue();});
+// Best score played while signed out: kept on the device and added to the board after signing in
+const UNSAVED_KEY='nl-ri-unsaved-best';
+const Unsaved={
+  get(){try{return JSON.parse(localStorage.getItem(UNSAVED_KEY)||'null')}catch(e){return null}},
+  keep(r){const u=this.get();if(!u||r.score>u.score){try{localStorage.setItem(UNSAVED_KEY,JSON.stringify(r))}catch(e){}}},
+  clear(){try{localStorage.removeItem(UNSAVED_KEY)}catch(e){}}
+};
+function adoptUnsaved(){
+  const u=Unsaved.get();if(!u||!Online.ready)return;
+  Unsaved.clear();Queue.add(u);
+  if(G.state==='over'&&G.unsavedId===u.id){G.saveId=u.id;G.save='SAVING SCORE...';}
+  flushQueue();
+}
 function saveResult(r){
-  G.pendingResult=null;
   if(r.score<=0){G.save='';return;}
+  const id=Date.now()+'-'+r.score;
   if(!Online.available){G.save='OFFLINE: SAVED ON DEVICE';return;}
-  if(!Online.ready){G.save='SIGN IN TO SAVE SCORE';G.pendingResult=r;return;}
-  const id=Date.now()+'-'+r.score;G.saveId=id;G.save='SAVING SCORE...';
+  if(!Online.ready){G.unsavedId=id;Unsaved.keep({score:r.score,set:r.set,id});
+    const u=Unsaved.get();G.save=u&&u.id===id?'NOT ON THE BOARD YET':'YOUR BEST IS KEPT FOR YOU';return;}
+  G.saveId=id;G.save='SAVING SCORE...';
   Queue.add({score:r.score,set:r.set,id});flushQueue();
 }
 // Set 10 voucher
@@ -606,10 +623,12 @@ function drawPrize(){
   else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('PLEASE CONTACT NO LIMITS',W/2,138,C.greyLt);}
   if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,178,C.white);
 }
-const joinEl=document.getElementById('joinLink'),shareEl=document.getElementById('shareBtn');
+const joinEl=document.getElementById('joinLink'),shareEl=document.getElementById('shareBtn'),saveEl=document.getElementById('saveBtn');
 function draw(){
   const showJoin=G.state==='prize'&&G.prize&&G.prize.status==='code'&&!G.paused;if(joinEl.hidden===showJoin)joinEl.hidden=!showJoin;
   const showShare=G.state==='over'&&G.score>0&&G.timer<=60;if(shareEl.hidden===showShare)shareEl.hidden=!showShare;
+  const showSave=showShare&&Online.available&&!Online.ready;if(saveEl.hidden===showSave)saveEl.hidden=!showSave;
+  shareEl.classList.toggle('low',showSave);
   let sx=0,sy=0;if(G.shake>0&&!G.paused){sx=(Math.random()*3|0)-1;sy=(Math.random()*3|0)-1;}
   ctx.setTransform(S,0,0,S,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
   ctx.setTransform(S,0,0,S,sx*S,sy*S);ctx.imageSmoothingEnabled=false;ctx.textBaseline='top';
@@ -672,6 +691,7 @@ async function doShare(){
   UI.open('share',d);
 }
 document.getElementById('shareBtn').addEventListener('click',doShare);
+document.getElementById('saveBtn').addEventListener('click',()=>{Audio.init();UI.open(Online.user?'nick':'auth',{tab:'join',intro:'Join or sign in to save your score to the Top 10.'});});
 
 /* ================= ONLINE: sign-in + leaderboard (Supabase) ================= */
 const SB_URL='https://nkkhbtrrytctpfwjenrz.supabase.co',SB_KEY='sb_publishable_1bZLkfdxFTM4w3SWqPklDw_l3leLxxl';
@@ -854,8 +874,7 @@ const accBtn=document.getElementById('bAccount');
 Online.on(()=>{
   accBtn.textContent=Online.ready?Online.me.nickname:'SIGN IN TO WIN';UI.refresh();
   if(!Online.ready)return;
-  flushQueue();
-  if(G.state==='over'&&G.pendingResult)saveResult(G.pendingResult);
+  adoptUnsaved();flushQueue();
   if(G.state==='prize'&&G.prize&&G.prize.status==='signin')doClaim();
   else claimSaved();
 });

@@ -179,7 +179,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.30';
+const APP_VERSION='1.31';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -190,7 +190,7 @@ const CFG={
   rackY:188,groundY:236,
   lives:4,extraLifeEvery:1000,
   shaker:{y:28,speed:.8,interval:1400,minAliens:8},
-  tubChance:.35,spotterGap:15,
+  tubChance:.35,tubAfter:480,spotterGap:15,
   setNames:['BEGINNER','WARMING UP','GETTING STRONGER','HEAVY LIFTING','BEAST MODE'],
   cheers:['SET COMPLETE!','KEEP PUSHING!','NO LIMITS!','ONE MORE REP!','FEEL THE BURN!','BEAST MODE!','STAY STRONG!'],
   shakerPts:[100,50,50,100,150,100,100,50,300,100,100,100,50,150,100],
@@ -290,11 +290,20 @@ const Audio=(()=>{
     beat(i){tone(BEAT[i],.1,{vol:.16,to:BEAT[i]*.92});}
   };
   // Golden shaker: a soft, steady hum with a slow wobble while it's on screen (fades in and out)
-  function loopStart(){if(!ac||muted||loop)return;const t=ac.currentTime;
+  function loopStart(kind){if(!ac||muted||loop)return;const t=ac.currentTime;
     const o=ac.createOscillator(),l=ac.createOscillator(),lg=ac.createGain(),g=ac.createGain();
-    o.type='sine';o.frequency.value=622;l.type='sine';l.frequency.value=3.2;lg.gain.value=38;
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.022,t+.25);
-    l.connect(lg).connect(o.frequency);o.connect(g).connect(ac.destination);o.start(t);l.start(t);loop=[o,l,g];}
+    if(kind==='tub'){
+      // Protein tub: low, soft "wub-wub" pulse (volume throbs, pitch steady)
+      const amp=ac.createGain();o.type='triangle';o.frequency.value=196;l.type='sine';l.frequency.value=4.5;lg.gain.value=.018;
+      amp.gain.value=.02;l.connect(lg).connect(amp.gain);o.connect(amp).connect(g);
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+.25);g.connect(ac.destination);
+    }else{
+      // Golden shaker: soft, steady hum with a slow pitch wobble
+      o.type='sine';o.frequency.value=622;l.type='sine';l.frequency.value=3.2;lg.gain.value=38;
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.022,t+.25);
+      l.connect(lg).connect(o.frequency);o.connect(g).connect(ac.destination);
+    }
+    o.start(t);l.start(t);loop=[o,l,g];}
   function loopStop(){if(!loop)return;const [o,l,g]=loop;loop=null;try{const t=ac.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+.12);o.stop(t+.15);l.stop(t+.15);}catch(e){}}
   return{init,fx,loopStart,loopStop,get muted(){return muted},set muted(v){muted=v;if(v)loopStop();}};
 })();
@@ -325,7 +334,7 @@ function startWave(){
   const A=CFG.alien,top=A.startY+Math.min(Math.floor(lvl()),A.maxLower)*8;G.aliens=[];
   for(let r=4;r>=0;r--)for(let c=0;c<A.cols;c++)G.aliens.push({x:A.startX+c*A.spacingX,y:top+r*A.spacingY,t:r,c,f:0,alive:true});
   G.ptr=0;G.dx=A.step;G.dropPending=false;
-  G.player={x:W/2-6,y:CFG.player.y,fireT:0};G.pbs=[];G.aBullets=[];G.shaker=null;G.shakerTimer=0;G.fireTimer=70;G.invaded=false;Audio.loopStop();
+  G.player={x:W/2-6,y:CFG.player.y,fireT:0};G.pbs=[];G.tubDone=false;G.setFrames=0;G.aBullets=[];G.shaker=null;G.shakerTimer=0;G.fireTimer=70;G.invaded=false;Audio.loopStop();
 }
 // Difficulty level: rises by 1 per set up to set 4, then only half a step per set (capped)
 function lvl(){const w=G.wave;return w<4?w:Math.min(3+(w-4)*.65,5.5);}
@@ -517,10 +526,14 @@ function moveAB(){
     if(b.y+7>=CFG.groundY){G.booms.push({x:b.x-3,y:CFG.groundY-6,t:12,kind:'spark'});G.aBullets.splice(i,1);}
   }
 }
+function spawnFlyer(kind){const dir=G.shots%2?-1:1;G.shaker={x:dir>0?-9:W,y:CFG.shaker.y,dir,kind};if(kind==='tub')G.tubDone=true;Audio.loopStart(kind);}
 function shakerTick(){
-  const sh=G.shaker,K=CFG.shaker;
+  const sh=G.shaker,K=CFG.shaker;G.setFrames++;
   if(sh){sh.x+=sh.dir*K.speed;if(sh.x<-12||sh.x>W+4){G.shaker=null;Audio.loopStop();}return;}
-  if(++G.shakerTimer>K.interval&&aliveCount()>=K.minAliens){G.shakerTimer=0;const dir=G.shots%2?-1:1;const kind=!G.spotter&&Math.random()<CFG.tubChance?'tub':'shaker';G.shaker={x:dir>0?-9:W,y:K.y,dir,kind};Audio.loopStart();}
+  // Guaranteed protein tub once per set (unless a spotter is already helping)
+  const n=aliveCount();
+  if(!G.spotter&&!G.tubDone&&n>=K.minAliens&&(G.setFrames>=CFG.tubAfter||n<=CFG.alien.cols*5*.75)){spawnFlyer('tub');return;}
+  if(++G.shakerTimer>K.interval&&aliveCount()>=K.minAliens){G.shakerTimer=0;const dir=G.shots%2?-1:1;spawnFlyer(!G.spotter&&Math.random()<CFG.tubChance?'tub':'shaker');}
 }
 function tickBooms(){for(const b of G.booms)b.t--;G.booms=G.booms.filter(b=>b.t>0);}
 
@@ -690,8 +703,8 @@ function draw(){
 const KEYMAP={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',Space:'fire',ArrowUp:'fire',KeyW:'fire'};
 const canStart=()=>G.state==='title'||((G.state==='over'||G.state==='prize')&&G.timer<=0);
 const sndBtn=document.getElementById('bSound'),restBtn=document.getElementById('bRest');
-function togglePause(){if(['play','dying','cleared','intro'].includes(G.state)){G.paused=!G.paused;restBtn.textContent=G.paused?'RESUME':'REST';if(G.paused)Audio.loopStop();else if(G.shaker)Audio.loopStart();}}
-function toggleMute(){Audio.muted=!Audio.muted;sndBtn.textContent=Audio.muted?'MUTED':'SOUND';if(!Audio.muted&&G.shaker&&!G.paused)Audio.loopStart();}
+function togglePause(){if(['play','dying','cleared','intro'].includes(G.state)){G.paused=!G.paused;restBtn.textContent=G.paused?'RESUME':'REST';if(G.paused)Audio.loopStop();else if(G.shaker)Audio.loopStart(G.shaker.kind);}}
+function toggleMute(){Audio.muted=!Audio.muted;sndBtn.textContent=Audio.muted?'MUTED':'SOUND';if(!Audio.muted&&G.shaker&&!G.paused)Audio.loopStart(G.shaker.kind);}
 addEventListener('keydown',e=>{
   if(UI.isOpen){if(e.code==='Escape')UI.close();return;}
   Audio.init();
@@ -900,7 +913,7 @@ const UI=(()=>{
         </tbody></table>
         <p class="fine" style="text-align:left">The golden shaker flies across the top now and then. Its mystery value depends on how many shots you've taken.</p>
         <h3>SPOTTER</h3>
-        <p>Every now and then a protein tub flies over instead of the shaker. Shoot it and a spotter in a red singlet joins you. You fire two shots at once, and your spotter takes the next hit for you. They stay until they're hit.</p>
+        <p>A protein tub flies over at least once every set while you don't have a spotter. Shoot it and a spotter in a red singlet joins you. You fire two shots at once, and your spotter takes the next hit for you. They stay until they're hit.</p>
         <h3>ENERGY (LIVES)</h3>
         <ul><li>You start with <span class="k">${CFG.lives} energy</span>.</li><li>Earn <span class="k">1 bonus energy every ${CFG.extraLifeEvery.toLocaleString()} reps</span>.</li><li>Each hit costs 1 energy.</li><li>If the equipment reaches your lifter, it's workout over.</li></ul>
         <h3>SQUAT RACKS</h3>

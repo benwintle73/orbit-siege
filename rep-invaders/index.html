@@ -106,8 +106,12 @@ table.board{width:100%;border-collapse:collapse;font-size:9px}
 .joinbtn{position:absolute;z-index:2;left:12%;right:12%;top:75%;display:flex;align-items:center;justify-content:center;min-height:9%;
   border-radius:4px;background:var(--gold);color:#1a1205;font-family:var(--pixel);font-size:clamp(8px,2.4vw,13px);text-decoration:none;text-align:center;
   box-shadow:0 0 0 3px #080808,0 0 0 5px var(--gold);letter-spacing:.04em}
+.joinbtn{border:none;cursor:pointer}
 .joinbtn:focus-visible{outline:2px solid var(--white);outline-offset:4px}
 a.go{display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
+.sharemsg{width:100%;box-sizing:border-box;min-height:92px;resize:none;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;padding:10px;border-radius:4px;border:1px solid var(--edge);background:#050505;color:var(--white);user-select:text;-webkit-user-select:text}
+.sharegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sharegrid .go{margin:0;font-size:10px;height:44px}
 .voucher{margin:16px 0 6px;padding:14px 10px;border:2px dashed var(--gold);text-align:center}
 .voucher b{display:block;font-size:13px;letter-spacing:.08em;color:var(--white);font-weight:400;margin:10px 0;word-break:break-all;user-select:all;-webkit-user-select:all}
 .dir{
@@ -150,7 +154,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
   <button id="bRest" class="small" aria-label="Rest (pause)">REST</button>
   <button id="bSound" class="small" aria-label="Toggle sound">SOUND</button>
 </div>
-<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN / RENEW ONLINE</a></div></div>
+<div class="stage" id="stage"><div class="crt" id="crt"><canvas id="screen" aria-label="Rep Invaders game screen"></canvas><button id="shareBtn" class="joinbtn" type="button" hidden>CHALLENGE A FRIEND</button><a id="joinLink" class="joinbtn" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" hidden>JOIN / RENEW ONLINE</a></div></div>
 <div class="dirs">
   <button class="dir" data-k="left" aria-label="Move left">◀</button>
   <button class="dir" data-k="right" aria-label="Move right">▶</button>
@@ -484,7 +488,8 @@ function drawHeader(){
 function drawTitle(){
   text('NO LIMITS 24/7',W/2,32,C.gold);
   text('REP INVADERS',W/2,44,C.white,'center',16);
-  text('DEFEND YOUR GAINS',W/2,64,C.red);
+  if(CH)text(CH.from?'BEAT '+CH.from+': '+CH.score:'BEAT '+CH.score+' REPS!',W/2,64,blink(20)?C.red:C.white);
+  else text('DEFEND YOUR GAINS',W/2,64,C.red);
   // prize box
   panel(8,78,W-16,44,C.gold);
   text('CLEAR SET 10: WIN $100!',W/2,84,C.gold);
@@ -539,7 +544,9 @@ function drawOver(){
   text('TOTAL REPS: '+pad4(G.score),W/2,96);
   text('SETS COMPLETED: '+G.wave,W/2,108);
   if(G.newPB&&G.score>0&&blink(15))text('NEW PERSONAL BEST!',W/2,122,C.gold);
-  if(G.save)text(G.save,W/2,138,C.greyLt);
+  if(CH){const who=CH.from||'THE TARGET';
+    text(G.score>CH.score?'YOU BEAT '+who+'!':G.score===CH.score?'DRAW WITH '+who+'!':'SHORT BY '+(CH.score-G.score)+' REPS',W/2,134,G.score>CH.score?C.gold:C.red);}
+  if(G.save)text(G.save,W/2,CH?146:138,C.greyLt);
   if(G.timer<=0&&blink())text(TXT.again,W/2,158,C.gold);
 }
 function drawPrize(){
@@ -564,9 +571,10 @@ function drawPrize(){
   else{text(P.msg||'SOMETHING WENT WRONG',W/2,124,C.white);text('PLEASE CONTACT NO LIMITS',W/2,138,C.greyLt);}
   if(G.timer<=0&&blink())text(TOUCH?'TAP LIFT TO KEEP LIFTING':'PRESS FIRE TO KEEP LIFTING',W/2,178,C.white);
 }
-const joinEl=document.getElementById('joinLink');
+const joinEl=document.getElementById('joinLink'),shareEl=document.getElementById('shareBtn');
 function draw(){
   const showJoin=G.state==='prize'&&G.prize&&G.prize.status==='code'&&!G.paused;if(joinEl.hidden===showJoin)joinEl.hidden=!showJoin;
+  const showShare=G.state==='over'&&G.score>0&&G.timer<=60;if(shareEl.hidden===showShare)shareEl.hidden=!showShare;
   let sx=0,sy=0;if(G.shake>0&&!G.paused){sx=(Math.random()*3|0)-1;sy=(Math.random()*3|0)-1;}
   ctx.setTransform(S,0,0,S,0,0);ctx.fillStyle=C.bg;ctx.fillRect(0,0,W,H);
   ctx.setTransform(S,0,0,S,sx*S,sy*S);ctx.imageSmoothingEnabled=false;ctx.textBaseline='top';
@@ -610,6 +618,24 @@ document.getElementById('bBoard').addEventListener('click',()=>UI.open('board'))
 document.getElementById('bRules').addEventListener('click',()=>UI.open('rules'));
 ['touchend','click'].forEach(ev=>addEventListener(ev,()=>Audio.init(),{passive:true}));
 document.addEventListener('touchmove',e=>{if(e.target.closest('button,canvas'))e.preventDefault();},{passive:false});
+
+/* ================= CHALLENGE + SHARE ================= */
+const GAME_URL='https://benwintle73.github.io/orbit-siege/rep-invaders/';
+const CH=(()=>{try{const q=new URLSearchParams(location.search),sc=parseInt(q.get('challenge'),10);
+  if(!(sc>0&&sc<=1000000))return null;
+  return{score:sc,from:(q.get('from')||'').toUpperCase().replace(/[^A-Z0-9 ]/g,'').trim().slice(0,12)};}catch(e){return null;}})();
+function shareData(){
+  const nick=Online.ready?Online.me.nickname:'';
+  const url=GAME_URL+'?challenge='+G.score+(nick?'&from='+encodeURIComponent(nick):'');
+  const text='I scored '+G.score.toLocaleString()+' reps and reached SET '+(G.wave+1)+' on NO LIMITS 24/7 REP INVADERS. Think you can beat me? Clear set 10 to win a $100 No Limits gift voucher!';
+  return{title:'No Limits 24/7: Rep Invaders',text,url};
+}
+async function doShare(){
+  Audio.init();const d=shareData();
+  if(navigator.share){try{await navigator.share(d);return;}catch(e){if(e&&e.name==='AbortError')return;}}
+  UI.open('share',d);
+}
+document.getElementById('shareBtn').addEventListener('click',doShare);
 
 /* ================= ONLINE: sign-in + leaderboard (Supabase) ================= */
 const SB_URL='https://nkkhbtrrytctpfwjenrz.supabase.co',SB_KEY='sb_publishable_1bZLkfdxFTM4w3SWqPklDw_l3leLxxl';
@@ -724,7 +750,7 @@ const UI=(()=>{
       const me=Online.me||{};title.textContent=me.nickname||'YOUR ACCOUNT';
       body.innerHTML=`<div class="stat"><span>BEST REPS</span><span>${me.best_score!=null?String(me.best_score).padStart(4,'0'):'----'}</span></div>
         <div class="stat"><span>BEST SET</span><span>${me.best_set!=null?me.best_set:'-'}</span></div>
-        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Use it when you join or renew online. Already a member? Contact No Limits and we'll credit it to your weekly direct debit. We've also emailed it to you.</div><a class="go" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="margin-top:12px">JOIN / RENEW ONLINE</a></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
+        ${me.voucher?`<div class="voucher"><div style="color:var(--gold)">$100 GIFT VOUCHER</div><b>${esc(me.voucher)}</b><div class="fine" style="margin:0">Use it when you join or renew online. Already a member? Email admin@nolimitshealthclubs.com.au and we'll credit it to your weekly direct debit. We've also emailed it to you.</div><a class="go" href="https://nolimitshealthclubs.gymmasteronline.com/portal/signup" target="_blank" rel="noopener" style="margin-top:12px">JOIN / RENEW ONLINE</a></div>`:'<p class="fine">Clear SET 10 to win one of 10 $100 No Limits gift vouchers. One per person.</p>'}
         <button class="go alt" id="bNick" style="margin-top:14px">CHANGE NICKNAME</button>
         <button class="go alt" id="bOut" style="margin-top:10px">SIGN OUT</button>`;
       $('bNick').onclick=()=>{view='nick';render();};$('bOut').onclick=async()=>{await Online.signOut();close();};
@@ -740,6 +766,19 @@ const UI=(()=>{
         if(view!=='board')return;const mine=Online.me&&Online.me.nickname;
         $('bWrap').innerHTML=rows&&rows.length?`<table class="board"><thead><tr><th>#</th><th>NAME</th><th class="n">REPS</th><th class="n">SET</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.nickname===mine?'me':''}"><td>${r.rank}</td><td>${esc(r.nickname)}</td><td class="n">${r.score}</td><td class="n">${r.set_reached}</td></tr>`).join('')}</tbody></table>`:`<p class="fine">No scores yet${per==='month'?' this month':''}. Be the first!</p>`;
       }).catch(()=>{if(view==='board')$('bWrap').innerHTML='<p class="fine">Could not load the leaderboard. Check your connection.</p>';});
+    }else if(view==='share'){
+      const d=opts,full=d.text+' '+d.url,enc=encodeURIComponent;
+      title.textContent='CHALLENGE A FRIEND';
+      body.innerHTML=`<textarea class="sharemsg" id="shMsg" readonly aria-label="Challenge message">${esc(full)}</textarea>
+        <div class="sharegrid">
+          <button class="go" id="shCopy" type="button">COPY</button>
+          <a class="go" href="https://wa.me/?text=${enc(full)}" target="_blank" rel="noopener">WHATSAPP</a>
+          <a class="go" href="https://www.facebook.com/sharer/sharer.php?u=${enc(d.url)}" target="_blank" rel="noopener">FACEBOOK</a>
+          <a class="go" href="sms:?&body=${enc(full)}">TEXT</a>
+        </div><p class="msg ok" id="mMsg" role="status"></p>`;
+      $('shCopy').onclick=()=>{const t=$('shMsg');
+        const sel=()=>{t.focus();t.select();say('Selected. Press copy on your keyboard.',true);};
+        try{navigator.clipboard.writeText(full).then(()=>say('Copied! Paste it to a friend.',true),sel);}catch(e){sel();}};
     }else if(view==='rules'){
       title.textContent='HOW TO PLAY';
       const img=s=>`<img alt="" src="${s.c.toDataURL()}" style="height:${s.h*2.25}px">`;

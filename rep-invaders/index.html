@@ -519,8 +519,8 @@ function drawGame(){
     else if(b.kind==='bonus'){text(b.text,b.x,b.y,C.gold);if(blink(8))text('BONUS GAINS!',W/2,44,C.gold);}
   }
   ctx.fillStyle=C.gold;ctx.fillRect(0,CFG.groundY,W,1);
-  text('ENERGY',8,242,C.gold,'left');text(String(Math.max(0,G.lives)),58,242,C.white,'left');
-  for(let i=0;i<Math.min(G.lives-1,4);i++)spr(SPR.life,72+i*10,242);
+  text('ENERGY',8,242,C.gold,'left');text(String(Math.max(0,G.lives)),64,242,C.white,'left');
+  for(let i=0;i<Math.min(G.lives-1,4);i++)spr(SPR.life,78+i*10,242);
   const sn=String(G.wave+1);text(sn,W-8,242,C.white,'right');text('SET',W-16-sn.length*8,242,C.gold,'right');
 }
 function drawBanner(){

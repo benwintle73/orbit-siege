@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Orbit Siege</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#06070b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
@@ -16,14 +22,15 @@
   --pixel:'Press Start 2P', ui-monospace, Menlo, Consolas, monospace;
   color-scheme:dark;
 }
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none}
+@supports (height:100dvh){html,body{height:100dvh}}
 body{
   margin:0;background:var(--void);color:var(--phos);font-family:var(--pixel);
   display:flex;flex-direction:column;align-items:center;gap:14px;box-sizing:border-box;
   padding-block:14px;
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
-  overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;
+  overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-touch-callout:none;
 }
 .stage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
 .crt{
@@ -176,7 +183,8 @@ function alienFire(){
   const b=alienBox(pick);
   aBullets.push({x:(b.x+b.w/2)|0,y:b.y+b.h,kind:Math.random()*2|0,f:0,v:1.2+Math.min(wave,5)*.15+(n<10?.4:0)});
 }
-function killPlayer(){state='dying';stateTimer=110;aBullets=[];pBullet=null;ufo=null;stopUfo();sfx.die();}
+function buzz(ms){try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}}
+function killPlayer(){buzz([80,40,160]);state='dying';stateTimer=110;aBullets=[];pBullet=null;ufo=null;stopUfo();sfx.die();}
 function gameOver(){state='over';stateTimer=90;saveHi();stopUfo();}
 
 function movePB(){
@@ -185,7 +193,7 @@ function movePB(){
   for(const a of aliens){
     if(!a.alive)continue;const b=alienBox(a);
     if(pb.x>=b.x&&pb.x<b.x+b.w&&pb.y<b.y+b.h&&pb.y+4>b.y){
-      a.alive=false;addScore(TYPES[a.t].pts);booms.push({x:b.x+((b.w-12)>>1),y:b.y,t:16,kind:'boom'});sfx.kill();pBullet=null;return;
+      a.alive=false;buzz(12);addScore(TYPES[a.t].pts);booms.push({x:b.x+((b.w-12)>>1),y:b.y,t:16,kind:'boom'});sfx.kill();pBullet=null;return;
     }
   }
   if(ufo&&pb.x>=ufo.x&&pb.x<ufo.x+16&&pb.y<ufo.y+7&&pb.y+4>ufo.y){
@@ -315,6 +323,7 @@ const STEP=1000/60;let acc=0,last=performance.now();
 function frame(t){acc+=Math.min(200,t-last);last=t;while(acc>=STEP){update();acc-=STEP;}draw();requestAnimationFrame(frame);}
 startWave();state='title';draw();requestAnimationFrame(frame);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(draw);
+if('serviceWorker' in navigator&&/github\.io$/.test(location.hostname)){navigator.serviceWorker.register('sw.js').catch(()=>{});}
 })();
 </script>
 

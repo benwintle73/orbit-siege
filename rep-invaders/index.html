@@ -59,6 +59,7 @@ body{
 .dirs,.liftwrap{display:none}
 
 button{font-family:var(--pixel);touch-action:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
+.dirs,.liftwrap,.dirs *,.liftwrap *,.crt,.crt *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 .small{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--edge);background:#121214;color:var(--gold);font-size:9px;letter-spacing:.06em}
 .small.on{background:#1f1f22}
@@ -179,7 +180,7 @@ a.go{display:flex;align-items:center;justify-content:center;text-decoration:none
 (()=>{
 'use strict';
 /* ================= CONFIG ================= */
-const APP_VERSION='1.31';
+const APP_VERSION='1.32';
 const CFG={
   W:224,H:256,S:3,
   colors:{bg:'#080808',gold:'#D7AA38',goldDk:'#9C7A22',white:'#F3F3E9',red:'#D93C38',redDk:'#8E2422',
@@ -718,6 +719,10 @@ function releaseAll(){if(typeof keys==='undefined')return;keys.left=keys.right=k
 addEventListener('blur',releaseAll);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){releaseAll();if(G.state==='play'&&!G.paused)togglePause();}});
 // Multi-touch: each button tracks its own pointers, so move + lift work together.
+['.dirs','.liftwrap','#screen'].forEach(sel=>{const el=document.querySelector(sel);if(!el)return;
+  ['touchstart','touchmove','touchend'].forEach(ev=>el.addEventListener(ev,e=>{if(e.cancelable)e.preventDefault();},{passive:false}));
+  ['selectstart','contextmenu','dragstart'].forEach(ev=>el.addEventListener(ev,e=>e.preventDefault()));
+});
 document.querySelectorAll('[data-k]').forEach(btn=>{
   const k=btn.dataset.k,ids=new Set();
   const on=e=>{e.preventDefault();Audio.init();ids.add(e.pointerId);keys[k]=true;btn.classList.add('on');if(k==='fire'&&canStart())startReq=true;if(G.paused)togglePause();try{btn.setPointerCapture(e.pointerId)}catch(_){}};
